@@ -9,8 +9,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -33,8 +35,8 @@ public class SystemConfigService {
         return Integer.parseInt(getCached(key));
     }
 
-    public Double getDouble(String key) {
-        return Double.parseDouble(getCached(key));
+    public BigDecimal getBigDecimal(String key) {
+        return new BigDecimal(getCached(key));
     }
 
     public Boolean getBoolean(String key) {
@@ -86,5 +88,18 @@ public class SystemConfigService {
         String cacheKey = CACHE_PREFIX + key;
         redisTemplate.delete(cacheKey);
         log.info("SystemConfig cache evicted: key='{}'", key);
+    }
+
+
+    public void clearAllConfigCache() {
+        // Find all keys in Redis that start with "config:"
+        Set<String> keys = redisTemplate.keys(CACHE_PREFIX + "*");
+
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+            log.warn("ADMIN ACTION: SystemConfig cache completely flushed. {} keys removed.", keys.size());
+        } else {
+            log.info("SystemConfig cache flush requested, but cache was already empty.");
+        }
     }
 }
