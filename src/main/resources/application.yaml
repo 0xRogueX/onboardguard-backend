@@ -1,4 +1,5 @@
 spring:
+
   application:
     name: onboardguard-backend
 
@@ -18,3 +19,16 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # Lettuce pool settings (optional, for better performance)
+      lettuce:
+        pool:
+          max-active: 10               # max simultaneous Redis connections
+          max-idle: 5
+          min-idle: 2
+          max-wait: 2000ms             # wait up to 2s before throwing pool exhausted error
