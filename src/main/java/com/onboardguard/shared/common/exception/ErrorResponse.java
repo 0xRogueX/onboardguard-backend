@@ -1,4 +1,4 @@
-package com.loanflow.exception;
+package com.onboardguard.shared.common.exception;
 
 import lombok.Builder;
 import lombok.Data;
