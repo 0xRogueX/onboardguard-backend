@@ -1,2 +1,8 @@
-package com.onboardguard.shared.common.enums;public enum ConfigType {
+package com.onboardguard.shared.common.enums;
+
+public enum ConfigType {
+    STRING,
+    INTEGER,
+    DECIMAL,
+    BOOLEAN
 }

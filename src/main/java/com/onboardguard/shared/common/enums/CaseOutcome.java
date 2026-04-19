@@ -1,2 +1,6 @@
-package com.onboardguard.shared.common.enums;public enum CaseOutcome {
+package com.onboardguard.shared.common.enums;
+
+public enum CaseOutcome {
+    CLEARED,
+    REJECTED
 }

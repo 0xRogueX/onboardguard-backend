@@ -1,2 +1,7 @@
-package com.onboardguard.shared.common.enums;public enum SeverityLevel {
+package com.onboardguard.shared.common.enums;
+
+public enum SeverityLevel {
+    HIGH,
+    MEDIUM,
+    LOW
 }

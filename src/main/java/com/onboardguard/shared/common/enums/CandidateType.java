@@ -1,2 +1,7 @@
-package com.onboardguard.shared.common.enums;public class CandidateType {
+package com.onboardguard.shared.common.enums;
+
+public enum CandidateType {
+    EMPLOYEE,
+    VENDOR,
+    CONTRACTOR
 }
