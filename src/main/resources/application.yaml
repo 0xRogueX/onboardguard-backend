@@ -36,8 +36,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com} # Defaulting to Gmail, change if using AWS SES/SendGrid
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}        # Your system email address
-    password: ${MAIL_PASSWORD}        # Your App Password (NOT your regular password)
+    username: ${MAIL_USERNAME:}        # Your system email address
+    password: ${MAIL_PASSWORD:}        # Your App Password (NOT your regular password)
     properties:
       mail:
         smtp:
