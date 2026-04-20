@@ -1,4 +1,4 @@
-package com.onboardguard.shared.common.email.service;
+package com.onboardguard.shared.email.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

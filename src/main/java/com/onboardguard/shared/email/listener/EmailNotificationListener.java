@@ -1,7 +1,7 @@
-package com.onboardguard.shared.common.email.listener;
+package com.onboardguard.shared.email.listener;
 
 import com.onboardguard.shared.common.events.*;
-import com.onboardguard.shared.common.email.service.EmailService;
+import com.onboardguard.shared.email.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
