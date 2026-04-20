@@ -42,8 +42,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com} # Defaulting to Gmail, change if using AWS SES/SendGrid
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}        # Your system email address
-    password: ${MAIL_PASSWORD:}        # Your App Password (NOT your regular password)
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -60,13 +60,9 @@ async:
   queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
   thread-name-prefix: ${ASYNC_THREAD_NAME_PREFIX:onboardguard-async-}
 
-# CLOUD-AGNOSTIC OBJECT STORAGE (AWS S3, Cloudflare R2, MinIO, etc.)
 app:
   storage:
-    region: ${STORAGE_REGION:auto}
-    endpoint: ${STORAGE_ENDPOINT:}
-    credentials:
-      access-key: ${STORAGE_ACCESS_KEY:}
-      secret-key: ${STORAGE_SECRET_KEY:}
-    # Appends the active profile (e.g., onboardguard-documents-local)
-    bucket: onboardguard-documents-${spring.profiles.active:local}
+    cloudinary:
+      cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+      api-key: ${CLOUDINARY_API_KEY:}
+      api-secret: ${CLOUDINARY_API_SECRET:}
