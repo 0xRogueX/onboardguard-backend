@@ -1,5 +1,4 @@
 spring:
-
   application:
     name: onboardguard-backend
 
@@ -20,15 +19,29 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  # REDIS CONFIGURATION (Caching)
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      # Lettuce pool settings (optional, for better performance)
       lettuce:
         pool:
-          max-active: 10               # max simultaneous Redis connections
+          max-active: 10
           max-idle: 5
           min-idle: 2
-          max-wait: 2000ms             # wait up to 2s before throwing pool exhausted error
+          max-wait: 2000ms
+
+  # EMAIL / SMTP CONFIGURATION (JavaMailSender)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com} # Defaulting to Gmail, change if using AWS SES/SendGrid
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}        # Your system email address
+    password: ${MAIL_PASSWORD:}        # Your App Password (NOT your regular password)
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
