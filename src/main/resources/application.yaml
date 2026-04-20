@@ -1,4 +1,9 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+
 spring:
+
   application:
     name: onboardguard-backend
 
@@ -25,6 +30,7 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+      # Lettuce pool settings (optional, for better performance)
       lettuce:
         pool:
           max-active: 10
@@ -45,3 +51,22 @@ spring:
           starttls:
             enable: true
             required: true
+          max-wait: 2000ms             # wait up to 2s before throwing pool exhausted error
+
+# Async Configuration
+async:
+  core-pool-size: ${ASYNC_CORE_POOL_SIZE:5}
+  max-pool-size: ${ASYNC_MAX_POOL_SIZE:20}
+  queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
+  thread-name-prefix: ${ASYNC_THREAD_NAME_PREFIX:onboardguard-async-}
+
+# CLOUD-AGNOSTIC OBJECT STORAGE (AWS S3, Cloudflare R2, MinIO, etc.)
+app:
+  storage:
+    region: ${STORAGE_REGION:auto}
+    endpoint: ${STORAGE_ENDPOINT:}
+    credentials:
+      access-key: ${STORAGE_ACCESS_KEY:}
+      secret-key: ${STORAGE_SECRET_KEY:}
+    # Appends the active profile (e.g., onboardguard-documents-local)
+    bucket: onboardguard-documents-${spring.profiles.active:local}
