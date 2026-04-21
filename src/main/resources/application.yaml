@@ -70,3 +70,20 @@ app:
       secret-key: ${STORAGE_SECRET_KEY:}
     # Appends the active profile (e.g., onboardguard-documents-local)
     bucket: onboardguard-documents-${spring.profiles.active:local}
+
+
+
+# Elasticsearch configuration
+elasticsearch:
+  # URL goes here (e.g., https://es-cluster.company.com:9200)
+  uris: ${ELASTICSEARCH_URL}
+
+  # Your assigned credentials
+  username: ${ELASTICSEARCH_USERNAME}
+  password: ${ELASTICSEARCH_PASSWORD}
+
+  # (Optional) If your senior's cluster uses a self-signed certificate and throws
+  # SSL errors on startup, uncomment the next two lines to bypass the SSL check:
+  # rest:
+  #   ssl:
+  #     bundle: ""
