@@ -1,6 +1,8 @@
 package com.onboardguard.shared.common.exception;
 
+import com.onboardguard.shared.storage.CloudStorageException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -17,6 +20,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<ErrorResponse> handleApplicationException(ApplicationException ex,
                                                                     HttpServletRequest request) {
+
+        log.error("Application exception occurred", ex);
+
+        if (ex instanceof CloudStorageException storageEx) {
+            log.error("Storage key involved: {}", storageEx.getStorageKey());
+        }
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(ex.getStatus().value())
