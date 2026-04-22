@@ -1,0 +1,15 @@
+spring:
+  data:
+    elasticsearch:
+      repositories:
+        enabled: false
+  elasticsearch:
+    uris: ""
+
+# Use in-memory H2 during tests if not already configured
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
