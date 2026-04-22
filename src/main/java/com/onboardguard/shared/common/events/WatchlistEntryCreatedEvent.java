@@ -1,4 +1,4 @@
-package com.onboardguard.watchlist.events;
+package com.onboardguard.shared.common.events;
 
 public record WatchlistEntryCreatedEvent(Long entryId) {
 }
