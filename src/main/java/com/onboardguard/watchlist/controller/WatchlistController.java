@@ -1,5 +1,6 @@
 package com.onboardguard.watchlist.controller;
 
+import com.onboardguard.shared.common.dto.ApiResponse;
 import com.onboardguard.watchlist.dto.CandidateMatchRequestDto;
 import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryRequestDto;
@@ -30,11 +31,11 @@ public class WatchlistController {
      */
     @PostMapping("/match")
     @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<List<WatchlistEntryResponseDto>> matchCandidate(
+    public ResponseEntity<ApiResponse<List<WatchlistEntryResponseDto>>> matchCandidate(
             @RequestBody @Valid CandidateMatchRequestDto request) {
 
         List<WatchlistEntryResponseDto> matches = watchlistService.findMatches(request);
-        return ResponseEntity.ok(matches);
+        return ResponseEntity.ok(ApiResponse.success("Matching completed", matches));
     }
 
     /**
@@ -43,8 +44,9 @@ public class WatchlistController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<Page<WatchlistEntryResponseDto>> getAllActiveEntries(Pageable pageable) {
-        return ResponseEntity.ok(watchlistService.getAllActiveEntries(pageable));
+    public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(Pageable pageable) {
+
+        return ResponseEntity.ok(ApiResponse.success("Getting all active entries", watchlistService.getAllActiveEntries(pageable)));
     }
 
     /**
@@ -54,8 +56,10 @@ public class WatchlistController {
      */
     @GetMapping("/{entryId}")
     @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<WatchlistEntryResponseDto> getEntryDetails(@PathVariable Long entryId) {
-        return ResponseEntity.ok(watchlistService.getEntryDetails(entryId));
+    public ResponseEntity<ApiResponse<WatchlistEntryResponseDto>> getEntryDetails(@PathVariable Long entryId) {
+
+        return ResponseEntity.ok(ApiResponse.success("Getting entry if entry ID : " + entryId, watchlistService.getEntryDetails(entryId)));
+
     }
 
     /**
@@ -64,8 +68,9 @@ public class WatchlistController {
      */
     @GetMapping("/categories")
     @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<List<WatchlistCategoryDto>> getCategories() {
-        return ResponseEntity.ok(watchlistService.getActiveCategories());
+    public ResponseEntity<ApiResponse<List<WatchlistCategoryDto>>> getCategories() {
+
+        return ResponseEntity.ok(ApiResponse.success("Getting active categories", watchlistService.getActiveCategories()));
     }
 
 
