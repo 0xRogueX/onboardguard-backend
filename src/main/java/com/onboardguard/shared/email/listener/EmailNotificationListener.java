@@ -70,4 +70,25 @@ public class EmailNotificationListener {
 
         emailService.sendHtmlEmail(event.candidateEmail(), "Action Required: Re-upload " + event.documentType(), "doc-rejection", context);
     }
+
+    @Async("emailTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOfficerCreated(OfficerCreatedEvent event) {
+        log.info("Event Received: Sending temp password email to officer {}", event.officerEmail());
+
+        Context context = new Context();
+        context.setVariable("name",          event.officerName());
+        context.setVariable("email",         event.officerEmail());
+        context.setVariable("tempPassword",  event.plainPassword());
+        context.setVariable("department",    event.department());
+        context.setVariable("createdBy",     event.createdByEmail());
+        context.setVariable("loginUrl",      "https://onboardguard.com/staff/login");
+
+        emailService.sendHtmlEmail(
+                event.officerEmail(),
+                "Your OnboardGuard Officer Account Credentials",
+                "officer-welcome",
+                context
+        );
+    }
 }
