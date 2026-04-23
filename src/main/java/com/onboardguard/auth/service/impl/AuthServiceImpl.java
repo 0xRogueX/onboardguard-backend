@@ -57,12 +57,9 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtTokenProvider.generateToken(auth);
         updateLastLogin(dto.email());
-
         log.info("Candidate login: email={}", dto.email());
 
-        // Manual instantiation here is optimal: avoids hitting the DB to convert CustomUserDetails back to AppUser
-        return new CandidateLoginResponseDto(
-                token, principal.getEmail(), principal.getFullName(), jwtExpirationMs / 1000);
+        return authMapper.toDto(principal, token, jwtExpirationMs / 1000);
     }
 
     @Override
@@ -75,14 +72,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtTokenProvider.generateToken(auth);
-        String roleCode = principal.getRole().name();
         updateLastLogin(dto.email());
+        log.info("Staff login: email={} role={}", dto.email(), principal.getRole().name());
 
-        log.info("Staff login: email={} role={}", dto.email(), roleCode);
-
-        // Manual instantiation here is optimal: avoids hitting the DB to convert CustomUserDetails back to AppUser
-        return new StaffLoginResponseDto(
-                token, principal.getEmail(), principal.getFullName(), roleCode, jwtExpirationMs / 1000);
+        return authMapper.toDto(principal, token, principal.getRole().name(), jwtExpirationMs / 1000);
     }
 
     @Override
@@ -92,24 +85,14 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
-        AppUser user = authMapper.toCandidateEntity(dto);
-
-        String username = dto.email().split("@")[0];
-        if (userRepository.existsByUsername(username)) {
-            username = username + "_" + System.currentTimeMillis() % 10000;
-        }
-
-        user.setPasswordHash(passwordEncoder.encode(dto.password()));
-
+        AppUser user = authMapper.toEntity(dto, passwordEncoder.encode(dto.password()));
         AppUser saved = userRepository.save(user);
-        String token = jwtTokenProvider.generateTokenForUser(saved);
 
+        String token = jwtTokenProvider.generateTokenForUser(saved);
         eventPublisher.publishEvent(new CandidateRegisteredEvent(saved.getEmail(), saved.getFullName()));
 
         log.info("Candidate registered: email={}", saved.getEmail());
-
-        // Fully utilizing the mapper for response mapping
-        return authMapper.toCandidateResponse(saved, token, jwtExpirationMs / 1000);
+        return authMapper.toDto(saved, token, jwtExpirationMs / 1000);
     }
 
     @Override
@@ -119,18 +102,11 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already registered: " + dto.email());
         }
 
-        String plainUsername = credentialGenerator.generateUsername(dto.fullName());
         String plainPassword = credentialGenerator.generatePassword();
-
-        // Fully utilizing the mapper for entity mapping (role, active, locked are implicitly set by Mapper)
-        AppUser officer = authMapper.toOfficerEntity(dto);
-        officer.setPasswordHash(passwordEncoder.encode(plainPassword));
-        officer.setCreatedBy(createdBy);
+        AppUser officer = authMapper.toEntity(dto, passwordEncoder.encode(plainPassword), createdBy);
 
         userRepository.save(officer);
-
-        log.info("Officer created: email={} username={} by={}",
-                officer.getEmail(), plainUsername, createdBy.getEmail());
+        log.info("Officer created: email={} by={}", officer.getEmail(), createdBy.getEmail());
     }
 
     @Override
@@ -139,7 +115,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Missing or invalid Authorization header");
         }
         String token = authHeader.substring(SecurityConstants.BEARER_PREFIX.length());
-        String email = jwtTokenProvider.getUsername(token);
+        String email = jwtTokenProvider.getUsername(token); // Or getEmailFromToken if updated
 
         blacklistService.blacklist(token);
         userDetailsService.evictCache(email);
@@ -149,8 +125,7 @@ public class AuthServiceImpl implements AuthService {
 
     private Authentication doAuthenticate(String email, String password) {
         try {
-            return authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password));
+            return authManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException("Invalid email or password");
         } catch (DisabledException e) {

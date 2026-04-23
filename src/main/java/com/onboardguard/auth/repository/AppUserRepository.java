@@ -16,11 +16,9 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     // Look-up
     Optional<AppUser> findByEmail(String email);
-    Optional<AppUser> findByUsername(String username);
 
     // Existence checks (used during registration / officer creation)
     boolean existsByEmail(String email);
-    boolean existsByUsername(String username);
 
     // Role-based queries (used by Admin / Super Admin panels)
     List<AppUser> findByRole(RoleCode role);

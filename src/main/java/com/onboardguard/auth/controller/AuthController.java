@@ -6,6 +6,7 @@ import com.onboardguard.auth.dto.request.RegisterCandidateDto;
 import com.onboardguard.auth.dto.response.CandidateLoginResponseDto;
 import com.onboardguard.auth.dto.response.StaffLoginResponseDto;
 import com.onboardguard.auth.service.AuthService;
+import com.onboardguard.shared.common.dto.ApiResponse;
 import com.onboardguard.shared.security.RolePermissions;
 import com.onboardguard.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
@@ -24,42 +25,40 @@ public class AuthController {
     private final AuthService authService;
     private final SecurityUtils securityUtils;
 
-    // ── CANDIDATE LOGIN (External Portal — public) ────────────────────────
     @PostMapping("/login/candidate")
-    public ResponseEntity<CandidateLoginResponseDto> loginCandidate(
+    public ResponseEntity<ApiResponse<CandidateLoginResponseDto>> loginCandidate(
             @Valid @RequestBody LoginRequestDto dto) {
-        return ResponseEntity.ok(authService.loginCandidate(dto));
+        CandidateLoginResponseDto response = authService.loginCandidate(dto);
+        return ResponseEntity.ok(ApiResponse.success("Candidate login successful", response));
     }
 
-    // ── STAFF LOGIN (Internal Portal — Officer/Admin/Super Admin — public) ─
     @PostMapping("/login/staff")
-    public ResponseEntity<StaffLoginResponseDto> loginStaff(
+    public ResponseEntity<ApiResponse<StaffLoginResponseDto>> loginStaff(
             @Valid @RequestBody LoginRequestDto dto) {
-        return ResponseEntity.ok(authService.loginStaff(dto));
+        StaffLoginResponseDto response = authService.loginStaff(dto);
+        return ResponseEntity.ok(ApiResponse.success("Staff login successful", response));
     }
 
-    // ── CANDIDATE SELF-REGISTRATION (public) ──────────────────────────────
     @PostMapping("/register/candidate")
-    public ResponseEntity<CandidateLoginResponseDto> registerCandidate(
+    public ResponseEntity<ApiResponse<CandidateLoginResponseDto>> registerCandidate(
             @Valid @RequestBody RegisterCandidateDto dto) {
+        CandidateLoginResponseDto response = authService.registerCandidate(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.registerCandidate(dto));
+                .body(ApiResponse.success("Candidate registered successfully", response));
     }
 
-    // ── LOGOUT (requires valid JWT) ───────────────────────────────────────
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
+    public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         authService.logout(authHeader);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
     }
 
-    // ── OFFICER CREATION (Admin module — placed here for completion context) ─
     @PostMapping("/admin/officer")
     @PreAuthorize("hasAuthority('" + RolePermissions.USER_CREATE + "')")
-    public ResponseEntity<Void> createOfficer(@Valid @RequestBody CreateOfficerDto dto) {
-        // AppUser uses UUID id, securityUtils resolves full entity mapping automatically via its token principal
+    public ResponseEntity<ApiResponse<Void>> createOfficer(@Valid @RequestBody CreateOfficerDto dto) {
         authService.createOfficer(dto, securityUtils.getCurrentUser());
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Officer created successfully", null));
     }
 }

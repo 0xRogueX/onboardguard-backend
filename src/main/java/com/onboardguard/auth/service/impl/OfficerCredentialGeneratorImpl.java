@@ -1,40 +1,17 @@
 package com.onboardguard.auth.service.impl;
 
-import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.auth.service.OfficerCredentialGenerator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.security.SecureRandom;
-import java.text.Normalizer;
-import java.util.regex.Pattern;
 
 @Service
-@RequiredArgsConstructor
 public class OfficerCredentialGeneratorImpl implements OfficerCredentialGenerator {
-
-    private final AppUserRepository userRepository;
 
     private static final String UPPER  = "ABCDEFGHJKMNPQRSTUVWXYZ";
     private static final String LOWER  = "abcdefghjkmnpqrstuvwxyz";
     private static final String DIGITS = "23456789";
     private static final String SYMBOL = "@#$!";
     private static final SecureRandom RNG = new SecureRandom();
-
-    @Override
-    public String generateUsername(String fullName) {
-        String[] parts = fullName.trim().split("\\s+", 2);
-        String firstName = slugify(parts[0]);
-        String lastName = parts.length > 1 ? slugify(parts[1]) : "officer";
-        String base = firstName + "." + lastName;
-
-        String candidate = base;
-        int suffix = 1;
-        while (userRepository.existsByUsername(candidate)) {
-            candidate = base + suffix++;
-        }
-        return candidate;
-    }
 
     @Override
     public String generatePassword() {
@@ -56,11 +33,5 @@ public class OfficerCredentialGeneratorImpl implements OfficerCredentialGenerato
             char tmp = ch[i]; ch[i] = ch[j]; ch[j] = tmp;
         }
         return new String(ch);
-    }
-
-    private String slugify(String s) {
-        String normalized = Normalizer.normalize(s, Normalizer.Form.NFD);
-        return Pattern.compile("[^\\p{ASCII}]").matcher(normalized)
-                .replaceAll("").replaceAll("[^a-zA-Z]", "").toLowerCase();
     }
 }
