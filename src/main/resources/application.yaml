@@ -39,6 +39,11 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
+    # Disable Spring Data Elasticsearch repositories during test/local runs by default
+    elasticsearch:
+      repositories:
+        enabled: false
+
   # EMAIL / SMTP CONFIGURATION (JavaMailSender)
   mail:
     host: ${MAIL_HOST:smtp.gmail.com} # Defaulting to Gmail, change if using AWS SES/SendGrid
@@ -53,6 +58,22 @@ spring:
             enable: true
             required: true
           max-wait: 2000ms             # wait up to 2s before throwing pool exhausted error
+
+  # Elasticsearch configuration
+
+  elasticsearch:
+    # URL goes here (e.g., https://es-cluster.company.com:9200)
+    uris: ${ELASTICSEARCH_URIS:}
+
+    # Your assigned credentials
+    username: ${ELASTICSEARCH_USERNAME:}
+    password: ${ELASTICSEARCH_PASSWORD:}
+
+    # (Optional) If your senior's cluster uses a self-signed certificate and throws
+    # SSL errors on startup, uncomment the next two lines to bypass the SSL check:
+    # rest:
+    #   ssl:
+    #     bundle: ""
 
 jwt:
   secret: ${JWT_SECRET:}                # minimum 64-char Base64 string in env
@@ -74,6 +95,10 @@ app:
 
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+  # Disable Elasticsearch auto-configuration in test / local by default.
+  elasticsearch:
+    enabled: false
 
 # Async Configuration
 async:
