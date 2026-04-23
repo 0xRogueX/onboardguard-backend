@@ -168,3 +168,6 @@ HELP.md
 *.swp
 *.orig
 .cache/
+
+export.sh
+project_dump.md

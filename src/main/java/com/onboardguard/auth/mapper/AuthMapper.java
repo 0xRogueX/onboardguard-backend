@@ -15,17 +15,23 @@ public interface AuthMapper {
 
     // --- toEntity (Request DTO -> Entity) ---
 
+    @Mapping(target = "email", source = "dto.email")
+    @Mapping(target = "fullName", source = "dto.fullName")
+    @Mapping(target = "phone", source = "dto.phone")
     @Mapping(target = "passwordHash", source = "encodedPassword")
     @Mapping(target = "role", constant = "ROLE_CANDIDATE")
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "locked", constant = "false")
     AppUser toEntity(RegisterCandidateDto dto, String encodedPassword);
 
+    @Mapping(target = "email", source = "dto.email")
+    @Mapping(target = "fullName", source = "dto.fullName")
+    @Mapping(target = "phone", source = "dto.phone")
     @Mapping(target = "passwordHash", source = "encodedPassword")
     @Mapping(target = "role", constant = "ROLE_OFFICER_L1")
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "locked", constant = "false")
-    @Mapping(target = "createdBy", source = "createdBy")
+    @Mapping(target = "createdByUser", source = "createdBy")
     AppUser toEntity(CreateOfficerDto dto, String encodedPassword, AppUser createdBy);
 
 

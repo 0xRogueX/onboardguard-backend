@@ -76,8 +76,8 @@ spring:
     #     bundle: ""
 
 jwt:
-  secret: ${JWT_SECRET:}                # minimum 64-char Base64 string in env
-  expiration-ms: ${JWT_EXPIRATION_MS:}  # 15 minutes exactly
+  secret: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=} # 32-byte base64 fallback for local/test
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}  # 15 minutes in milliseconds
 
 app:
 
