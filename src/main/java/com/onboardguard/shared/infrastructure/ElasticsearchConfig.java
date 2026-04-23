@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
-import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.data.elasticsearch.support.HttpHeaders;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -33,8 +32,9 @@ import java.time.Duration;
  * - Dynamically adapts to internal VPC clusters (No Auth) vs Secure Cloud clusters (Auth).
  */
 @Configuration
+// Require both app.elasticsearch.enabled=true AND spring.data.elasticsearch.repositories.enabled=true
 @ConditionalOnProperty(prefix = "app.elasticsearch", name = "enabled", havingValue = "true", matchIfMissing = false)
-@EnableElasticsearchRepositories(basePackages = "com.onboardguard.watchlist.elasticsearch")
+@ConditionalOnProperty(prefix = "spring.data.elasticsearch.repositories", name = "enabled", havingValue = "true", matchIfMissing = false)
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchConfig.class);

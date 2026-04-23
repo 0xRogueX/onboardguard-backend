@@ -1,18 +1,14 @@
 package com.onboardguard.watchlist.controller;
 
 import com.onboardguard.shared.common.dto.ApiResponse;
-import com.onboardguard.watchlist.dto.CandidateMatchRequestDto;
 import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
-import com.onboardguard.watchlist.dto.WatchlistEntryRequestDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
 import com.onboardguard.watchlist.service.WatchlistService;
-import jakarta.validation.Valid;
+import com.onboardguard.watchlist.service.impl.WatchlistServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,41 +21,40 @@ public class WatchlistController {
     private final WatchlistService watchlistService;
 
     /**
-     * 1. THE MATCHING ENGINE TRIGGER
-     * Takes candidate data and runs it through Elasticsearch to find fuzzy matches.
-     * Uses POST because the candidate payload can be large and contains PII.
+     * 1. GET ALL ENTRIES (Browse the Catalog)
+     * Used by the UI Data Grid to show all currently active restricted entities.
+     * Supports pagination via ?page=0&size=20
      */
-    @PostMapping("/match")
-    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<ApiResponse<List<WatchlistEntryResponseDto>>> matchCandidate(
-            @RequestBody @Valid CandidateMatchRequestDto request) {
-
-        List<WatchlistEntryResponseDto> matches = watchlistService.findMatches(request);
-        return ResponseEntity.ok(ApiResponse.success("Matching completed", matches));
+    @GetMapping
+//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN' , 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(Pageable pageable) {
+        Page<WatchlistEntryResponseDto> pageData = watchlistService.getAllActiveEntries(pageable);
+        return ResponseEntity.ok(ApiResponse.success("Fetched watchlist entries", pageData));
     }
 
     /**
-     * 2. GET ALL ACTIVE ENTRIES (For Admin Dashboard Data Grid)
-     * Supports pagination, sorting, and basic filtering via Pageable.
+     * 2. SEARCH WATCHLIST (Manual Dictionary Lookup)
+     * This is a simple fuzzy search for an Officer who wants to manually check a name
+     * outside of the automated candidate onboarding flow.
      */
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(Pageable pageable) {
+    @GetMapping("/search")
+//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN' , 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<WatchlistEntryResponseDto>>> manualSearch(
+            @RequestParam String name) {
 
-        return ResponseEntity.ok(ApiResponse.success("Getting all active entries", watchlistService.getAllActiveEntries(pageable)));
+        List<WatchlistEntryResponseDto> results = watchlistService.searchRawDictionary(name);
+        return ResponseEntity.ok(ApiResponse.success("Search complete", results));
     }
 
     /**
      * 3. GET ENTRY DETAILS
-     * Fetches the full profile (including aliases and evidence) of a specific flagged entry.
-     * Used when an Officer clicks on a match to investigate further.
+     * Fetches the full profile (including aliases and evidence documents) of a specific flagged entry.
      */
     @GetMapping("/{entryId}")
-    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN' , 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<WatchlistEntryResponseDto>> getEntryDetails(@PathVariable Long entryId) {
-
-        return ResponseEntity.ok(ApiResponse.success("Getting entry if entry ID : " + entryId, watchlistService.getEntryDetails(entryId)));
-
+        WatchlistEntryResponseDto details = watchlistService.getEntryDetails(entryId);
+        return ResponseEntity.ok(ApiResponse.success("Fetched entry details", details));
     }
 
     /**
@@ -67,12 +62,25 @@ public class WatchlistController {
      * Used to populate dropdown filters on the frontend UI.
      */
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN' , 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<WatchlistCategoryDto>>> getCategories() {
-
-        return ResponseEntity.ok(ApiResponse.success("Getting active categories", watchlistService.getActiveCategories()));
+        List<WatchlistCategoryDto> categories = watchlistService.getActiveCategories();
+        return ResponseEntity.ok(ApiResponse.success("Fetched categories", categories));
     }
 
+    //    /**
+//     * THE MATCHING ENGINE TRIGGER
+//     * Takes candidate data and runs it through Elasticsearch to find fuzzy matches.
+//     * Uses POST because the candidate payload can be large and contains PII.
+//     */
+//    @PostMapping("/match")
+//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+//    public ResponseEntity<ApiResponse<List<WatchlistEntryResponseDto>>> matchCandidate(
+//            @RequestBody @Valid CandidateMatchRequestDto request) {
+//
+//        List<WatchlistEntryResponseDto> matches = watchlistService.findMatches(request);
+//        return ResponseEntity.ok(ApiResponse.success("Matching completed", matches));
+//    }
 
 //    @PostMapping("/request")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")

@@ -1,5 +1,6 @@
 package com.onboardguard.watchlist.dto;
 
+import com.onboardguard.shared.common.enums.CategoryCode;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -9,7 +10,7 @@ import java.util.Map;
 public class WatchlistEntryRequestDto {
 
     @NotBlank(message = "Category code is strictly required")
-    private String categoryCode; // e.g., CRIMINAL_RECORDS
+    private CategoryCode categoryCode; // e.g., CRIMINAL_RECORDS
 
     @NotBlank(message = "Primary name cannot be empty")
     @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")

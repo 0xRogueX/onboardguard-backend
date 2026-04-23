@@ -1,5 +1,7 @@
 package com.onboardguard.watchlist.dto;
 
+import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,11 +14,11 @@ public class WatchlistEntryResponseDto {
     private Long id;
 
     // Flattened Category Info
-    private String categoryCode;
+    private CategoryCode categoryCode;
     private String categoryName;
 
     private String primaryName;
-    private String severity;
+    private SeverityLevel severity;
     private String sourceName;
     private Double sourceCredibilityWeight;
 

@@ -1,20 +1,20 @@
 package com.onboardguard.watchlist.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onboardguard.watchlist.dto.*;
-import com.onboardguard.watchlist.entity.*;
-import com.onboardguard.watchlist.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
+import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
+import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class WatchlistService {
+import java.util.List;
 
-    
+public interface WatchlistService {
+    Page<WatchlistEntryResponseDto> getAllActiveEntries(Pageable pageable);
+
+    WatchlistEntryResponseDto getEntryDetails(Long entryId);
+
+    List<WatchlistCategoryDto> getActiveCategories();
+
+    List<WatchlistEntryResponseDto> findExactIdMatch(String panNumber, String aadhaarNumber, String cin, String din);
+
+    List<WatchlistEntryResponseDto> searchRawDictionary(String searchName);
 }

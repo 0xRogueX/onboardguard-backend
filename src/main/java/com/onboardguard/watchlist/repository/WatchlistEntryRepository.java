@@ -2,6 +2,8 @@ package com.onboardguard.watchlist.repository;
 
 import com.onboardguard.watchlist.entity.WatchlistEntry;
 import org.hibernate.sql.exec.spi.JdbcCallParameterRegistration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -15,5 +17,10 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
     @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
-    List<WatchlistEntry> findAllActiveAndEffective();
+    Page<WatchlistEntry> findAllActiveAndEffective(Pageable pageable);
+
+    Page<WatchlistEntry> findByIsActiveTrue(Pageable pageable);
+
+    List<WatchlistEntry> findByPanNumberOrAadhaarNumberOrDinNumberOrCinNumber(String pan, String aadhaar, String din, String cin);
+
 }
