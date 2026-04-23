@@ -37,6 +37,7 @@ public class WatchlistEntry extends BaseEntity {
 
     private String panNumber;
     private String aadhaarNumber;
+    private String passportNumber;
     private String dinNumber;
     private String cinNumber;
 

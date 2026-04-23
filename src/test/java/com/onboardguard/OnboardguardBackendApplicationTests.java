@@ -3,6 +3,9 @@ package com.onboardguard;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import com.onboardguard.watchlist.elasticsearch.WatchlistSearchRepository;
 
 @SpringBootTest(
         properties = {
@@ -14,6 +17,14 @@ import org.springframework.test.context.ActiveProfiles;
 )
 @ActiveProfiles("test")
 class OnboardguardBackendApplicationTests {
+
+    // Provide a Mockito mock for ElasticsearchOperations so beans depending on it can initialize during tests
+    @MockBean
+    ElasticsearchOperations elasticsearchOperations;
+
+    // Provide a Mockito mock for the Elasticsearch repository so services depending on it can initialize
+    @MockBean
+    WatchlistSearchRepository watchlistSearchRepository;
 
     @Test
     void contextLoads() {
