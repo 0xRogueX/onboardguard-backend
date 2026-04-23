@@ -29,7 +29,7 @@ public class WatchlistController {
      * Uses POST because the candidate payload can be large and contains PII.
      */
     @PostMapping("/match")
-    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<WatchlistEntryResponseDto>> matchCandidate(
             @RequestBody @Valid CandidateMatchRequestDto request) {
 
@@ -42,7 +42,7 @@ public class WatchlistController {
      * Supports pagination, sorting, and basic filtering via Pageable.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<Page<WatchlistEntryResponseDto>> getAllActiveEntries(Pageable pageable) {
         return ResponseEntity.ok(watchlistService.getAllActiveEntries(pageable));
     }
@@ -53,7 +53,7 @@ public class WatchlistController {
      * Used when an Officer clicks on a match to investigate further.
      */
     @GetMapping("/{entryId}")
-    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<WatchlistEntryResponseDto> getEntryDetails(@PathVariable Long entryId) {
         return ResponseEntity.ok(watchlistService.getEntryDetails(entryId));
     }
@@ -63,7 +63,7 @@ public class WatchlistController {
      * Used to populate dropdown filters on the frontend UI.
      */
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('OFFICER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1' ,'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<WatchlistCategoryDto>> getCategories() {
         return ResponseEntity.ok(watchlistService.getActiveCategories());
     }

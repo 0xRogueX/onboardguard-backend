@@ -1,12 +1,12 @@
 package com.onboardguard.watchlist.service;
 
+import com.onboardguard.shared.common.events.WatchlistEntryCreatedEvent;
+import com.onboardguard.shared.common.events.WatchlistEntryDeactivatedEvent;
+import com.onboardguard.shared.common.events.WatchlistEntryUpdatedEvent;
 import com.onboardguard.watchlist.dto.*;
 import com.onboardguard.watchlist.elasticsearch.WatchlistDocument;
 import com.onboardguard.watchlist.elasticsearch.WatchlistSearchRepository;
 import com.onboardguard.watchlist.entity.WatchlistEntry;
-import com.onboardguard.watchlist.events.WatchlistEntryCreatedEvent;
-import com.onboardguard.watchlist.events.WatchlistEntryDeactivatedEvent;
-import com.onboardguard.watchlist.events.WatchlistEntryUpdatedEvent;
 import com.onboardguard.watchlist.repository.WatchlistAliasRepository;
 import com.onboardguard.watchlist.repository.WatchlistEntryRepository;
 import lombok.RequiredArgsConstructor;
