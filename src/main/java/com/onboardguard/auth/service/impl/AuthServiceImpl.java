@@ -11,6 +11,7 @@ import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.auth.service.AuthService;
 import com.onboardguard.auth.service.OfficerCredentialGenerator;
 import com.onboardguard.shared.common.events.CandidateRegisteredEvent;
+import com.onboardguard.shared.common.events.OfficerCreatedEvent;
 import com.onboardguard.shared.security.CustomUserDetails;
 import com.onboardguard.shared.security.CustomUserDetailsService;
 import com.onboardguard.shared.security.JwtTokenProvider;
@@ -59,7 +60,8 @@ public class AuthServiceImpl implements AuthService {
         updateLastLogin(dto.email());
         log.info("Candidate login: email={}", dto.email());
 
-        return authMapper.toDto(principal, token, jwtExpirationMs / 1000);
+        // Fix 1 applied: renamed to toCandidateDto
+        return authMapper.toCandidateDto(principal, token, jwtExpirationMs / 1000);
     }
 
     @Override
@@ -75,7 +77,8 @@ public class AuthServiceImpl implements AuthService {
         updateLastLogin(dto.email());
         log.info("Staff login: email={} role={}", dto.email(), principal.getRole().name());
 
-        return authMapper.toDto(principal, token, principal.getRole().name(), jwtExpirationMs / 1000);
+        // Fix 1 applied: renamed to toStaffDto
+        return authMapper.toStaffDto(principal, token, principal.getRole().name(), jwtExpirationMs / 1000);
     }
 
     @Override
@@ -92,7 +95,9 @@ public class AuthServiceImpl implements AuthService {
         eventPublisher.publishEvent(new CandidateRegisteredEvent(saved.getEmail(), saved.getFullName()));
 
         log.info("Candidate registered: email={}", saved.getEmail());
-        return authMapper.toDto(saved, token, jwtExpirationMs / 1000);
+
+        // Fix 1 applied: uses AppUser overload — email/fullName correctly pulled from entity
+        return authMapper.toCandidateDto(saved, token, jwtExpirationMs / 1000);
     }
 
     @Override
@@ -102,10 +107,20 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already registered: " + dto.email());
         }
 
+        // Generate plain password BEFORE encoding — we need to send it in the email
         String plainPassword = credentialGenerator.generatePassword();
         AppUser officer = authMapper.toEntity(dto, passwordEncoder.encode(plainPassword), createdBy);
-
         userRepository.save(officer);
+
+        // Fix 2 applied: fire event AFTER save so email goes out only on successful commit
+        eventPublisher.publishEvent(new OfficerCreatedEvent(
+                officer.getEmail(),
+                officer.getFullName(),
+                plainPassword,              // sent in email, never stored anywhere
+                dto.department(),
+                createdBy.getEmail()
+        ));
+
         log.info("Officer created: email={} by={}", officer.getEmail(), createdBy.getEmail());
     }
 
@@ -115,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Missing or invalid Authorization header");
         }
         String token = authHeader.substring(SecurityConstants.BEARER_PREFIX.length());
-        String email = jwtTokenProvider.getUsername(token); // Or getEmailFromToken if updated
+        String email = jwtTokenProvider.getUsername(token);
 
         blacklistService.blacklist(token);
         userDetailsService.evictCache(email);
