@@ -34,8 +34,9 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
-                        .anyRequest().authenticated())
+//                        .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
+//                        .anyRequest().authenticated())
+                        .anyRequest().permitAll())
 
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
