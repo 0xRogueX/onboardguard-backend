@@ -4,6 +4,6 @@ public record OfficerCreatedEvent(
         String officerEmail,
         String officerName,
         String plainPassword,   // sent once, never stored
-        String department,
+        String role,
         String createdByEmail
 ) {}
