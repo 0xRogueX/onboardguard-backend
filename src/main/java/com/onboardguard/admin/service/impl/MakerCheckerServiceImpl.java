@@ -13,11 +13,13 @@ import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import com.onboardguard.shared.common.enums.RoleCode;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
+import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.config.entity.SystemConfig;
 import com.onboardguard.shared.config.repository.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,19 +57,19 @@ public class MakerCheckerServiceImpl {
         log.info("Processing Maker-Checker review for Request ID: {}", requestId);
 
         ApprovalRequest request = approvalRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Approval request not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Approval request not found"));
 
         if (request.getStatus() != RequestStatus.PENDING) {
             throw new IllegalStateException("This request has already been processed.");
         }
 
         AppUser checker = userRepository.findByEmail(checkerEmail)
-                .orElseThrow(() -> new IllegalStateException("Checker not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Checker not found"));
 
         // Rule 1: Separation of Duties (A Maker cannot be their own Checker)
         // Note: Super Admins can bypass this if they use emergency override, but normally it's blocked.
         if (request.getRequestedBy().equals(checker.getId()) && !reviewDto.isBypass()) {
-            throw new SecurityException("Separation of Duties violated: You cannot approve your own request.");
+            throw new UnauthorizedAccessException("Separation of Duties violated: You cannot approve your own request.");
         }
 
         // Rule 2: Enforce Rejection Reason
@@ -105,7 +107,7 @@ public class MakerCheckerServiceImpl {
             switch (request.getTargetEntityType()) {
                 case "SYSTEM_CONFIG" -> applySystemConfigUpdate(request);
                 case "WATCHLIST_ENTRY" -> log.info("Watchlist entry handler would go here");
-                default -> throw new IllegalStateException("Unknown entity type for approval: " + request.getTargetEntityType());
+                default -> throw new ResourceNotFoundException("Unknown entity type for approval: " + request.getTargetEntityType());
             }
         } catch (JsonProcessingException e) {
             log.error("Failed to parse Maker-Checker JSON payload", e);
@@ -115,15 +117,16 @@ public class MakerCheckerServiceImpl {
 
     private void applySystemConfigUpdate(ApprovalRequest request) throws JsonProcessingException {
         SystemConfig config = systemConfigRepository.findById(request.getTargetEntityId())
-                .orElseThrow(() -> new IllegalArgumentException("Target System Config not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Target System Config not found"));
 
-        // Deserialize the JSON string back into the DTO the Admin originally sent!
+        // Deserialize the JSON string back into the DTO the Admin originally sent
         UpdateSystemConfigDto payload = objectMapper.readValue(request.getPayload(), UpdateSystemConfigDto.class);
 
         // Apply changes
         config.setConfigValue(payload.configValue());
         config.setDescription(payload.description());
 //        config.set(payload.isActive());
+//        config.setIsSensitive(payload.isSensitive());
 
         systemConfigRepository.save(config);
     }
@@ -163,7 +166,7 @@ public class MakerCheckerServiceImpl {
         String finalRemarks = remarks != null ? remarks : "Authorized by Super Admin";
 
         eventPublisher.publishEvent(BusinessLogEvent.builder()
-                .entityType(request.getTargetEntityType()) // Log against the SYSTEM_CONFIG, not the request!
+                .entityType(request.getTargetEntityType()) // Log against the SYSTEM_CONFIG, not the request
                 .entityId(request.getTargetEntityId())
                 .action(action)
                 .oldStatus("PENDING_APPROVAL")

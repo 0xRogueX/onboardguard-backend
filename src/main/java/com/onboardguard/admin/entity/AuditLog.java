@@ -36,7 +36,7 @@ public class AuditLog {
 
     // Decoupled from the User entity to prevent module tangled dependencies
     @Column(name = "performed_by", length = 100)
-    private String performedBy;
+    private Long performedBy;
 
     @Column(name = "actor_role", length = 50)
     private String actorRole;

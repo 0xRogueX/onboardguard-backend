@@ -10,7 +10,7 @@ public record AuditLogDto (
      String action,
      String oldStatus,
      String newStatus,
-     String performedBy,
+     Long performedBy,
      String actorRole,
      String remarks,
      LocalDateTime createdAt

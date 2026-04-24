@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class UserManagementServiceImpl {
     @Transactional
     public void toggleUserStatus(Long targetUserId, boolean isActive, AppUser currentUser, RoleCode currentUserRole) {
         AppUser targetUser = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Rule 3: Prevent self-deactivation
         if (targetUser.getEmail().equals(currentUser.getEmail())) {
