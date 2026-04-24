@@ -102,20 +102,20 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.toCandidateDto(saved, token, jwtExpirationMs / 1000);
     }
 
-    @Override
     @Transactional
-    public void createOfficer(CreateOfficerDto dto, AppUser createdBy) {
+    @Override
+    public void createOfficer(CreateOfficerDto dto, AppUser createdBy, RoleCode role) {
         if (userRepository.existsByEmail(dto.email())) {
             throw new BadRequestException("An account with this email already exists.");
         }
 
+        if (dto.role() != RoleCode.ROLE_OFFICER_L1 && dto.role() != RoleCode.ROLE_OFFICER_L2) {
+            log.warn("Security Alert: User Id {} attempted to create an unauthorized role: {}", createdBy.getId(), dto.role());
+            throw new SecurityException("This API is strictly limited to provisioning L1 and L2 Officers.");
+        }
+
         // 1. Generate secure password
         String rawPassword = credentialGenerator.generatePassword();
-
-        // 2. Map department to Role (Modify logic based on your specific department needs)
-        RoleCode assignedRole = dto.department().equalsIgnoreCase("COMPLIANCE")
-                ? RoleCode.ROLE_OFFICER_L2
-                : RoleCode.ROLE_OFFICER_L1;
 
         // 3. Create the Officer entity
         AppUser officer = AppUser.builder()
@@ -123,7 +123,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(dto.fullName())
                 .phone(dto.phone())
                 .passwordHash(passwordEncoder.encode(rawPassword))
-                .role(assignedRole)
+                .role(role)
                 .active(true)
                 .locked(false)
                 .build();
@@ -136,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
                         officer.getEmail(),      // 1. officerEmail
                         officer.getFullName(),   // 2. officerName
                         rawPassword,             // 3. plainPassword
-                        dto.department(),        // 4. department
+                        role.name(),             // 4. officerRole
                         createdBy.getEmail()     // 5. createdByEmail
                 )
         );
