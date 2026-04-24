@@ -80,7 +80,7 @@ public class EmailNotificationListener {
         context.setVariable("name",          event.officerName());
         context.setVariable("email",         event.officerEmail());
         context.setVariable("tempPassword",  event.plainPassword());
-        context.setVariable("department",    event.department());
+        context.setVariable("role",          event.role());
         context.setVariable("createdBy",     event.createdByEmail());
         context.setVariable("loginUrl",      "https://onboardguard.com/staff/login");
 
