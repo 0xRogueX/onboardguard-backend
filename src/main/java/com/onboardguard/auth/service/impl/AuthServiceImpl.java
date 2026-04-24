@@ -10,8 +10,10 @@ import com.onboardguard.auth.mapper.AuthMapper;
 import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.auth.service.AuthService;
 import com.onboardguard.auth.service.OfficerCredentialGenerator;
+import com.onboardguard.shared.common.enums.RoleCode;
 import com.onboardguard.shared.common.events.CandidateRegisteredEvent;
 import com.onboardguard.shared.common.events.OfficerCreatedEvent;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.security.CustomUserDetails;
 import com.onboardguard.shared.security.CustomUserDetailsService;
 import com.onboardguard.shared.security.JwtTokenProvider;
@@ -104,23 +106,40 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void createOfficer(CreateOfficerDto dto, AppUser createdBy) {
         if (userRepository.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("Email already registered: " + dto.email());
+            throw new BadRequestException("An account with this email already exists.");
         }
 
-        // Generate plain password BEFORE encoding — we need to send it in the email
-        String plainPassword = credentialGenerator.generatePassword();
-        AppUser officer = authMapper.toEntity(dto, passwordEncoder.encode(plainPassword), createdBy);
+        // 1. Generate secure password
+        String rawPassword = credentialGenerator.generatePassword();
+
+        // 2. Map department to Role (Modify logic based on your specific department needs)
+        RoleCode assignedRole = dto.department().equalsIgnoreCase("COMPLIANCE")
+                ? RoleCode.ROLE_OFFICER_L2
+                : RoleCode.ROLE_OFFICER_L1;
+
+        // 3. Create the Officer entity
+        AppUser officer = AppUser.builder()
+                .email(dto.email())
+                .fullName(dto.fullName())
+                .phone(dto.phone())
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .role(assignedRole)
+                .active(true)
+                .locked(false)
+                .build();
+
         userRepository.save(officer);
 
-        // Fix 2 applied: fire event AFTER save so email goes out only on successful commit
-        eventPublisher.publishEvent(new OfficerCreatedEvent(
-                officer.getEmail(),
-                officer.getFullName(),
-                plainPassword,              // sent in email, never stored anywhere
-                dto.department(),
-                createdBy.getEmail()
-        ));
-
+        // 4. Fire event to trigger 'officer-welcome.html' async email via EmailNotificationListener
+        eventPublisher.publishEvent(
+                new OfficerCreatedEvent(
+                        officer.getEmail(),      // 1. officerEmail
+                        officer.getFullName(),   // 2. officerName
+                        rawPassword,             // 3. plainPassword
+                        dto.department(),        // 4. department
+                        createdBy.getEmail()     // 5. createdByEmail
+                )
+        );
         log.info("Officer created: email={} by={}", officer.getEmail(), createdBy.getEmail());
     }
 
