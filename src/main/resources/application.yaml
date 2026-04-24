@@ -9,11 +9,10 @@ spring:
 
   # DATABASE CONNECTION (PostgreSQL)
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:testdb}
-    username: ${DB_USERNAME:sa}
+    url: ${DB_URL:}
+    username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
-
+    driver-class-name: org.postgresql.Driver
 
   # JPA / HIBERNATE CONFIGURATION
   jpa:
@@ -77,8 +76,8 @@ spring:
     #     bundle: ""
 
 jwt:
-  secret: ${JWT_SECRET:}            # minimum 64-char Base64 string in env
-  expiration-ms: ${JWT_EXPIRATION_MS:} # 15 minutes exactly
+  secret: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=} # 32-byte base64 fallback for local/test
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}  # 15 minutes in milliseconds
 
 app:
 
@@ -93,6 +92,9 @@ app:
       cloud-name: ${CLOUDINARY_CLOUD_NAME:}
       api-key: ${CLOUDINARY_API_KEY:}
       api-secret: ${CLOUDINARY_API_SECRET:}
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
   # Disable Elasticsearch auto-configuration in test / local by default.
   elasticsearch:
