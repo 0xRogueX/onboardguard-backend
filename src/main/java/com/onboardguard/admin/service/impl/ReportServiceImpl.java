@@ -2,6 +2,8 @@ package com.onboardguard.admin.service.impl;
 
 import com.onboardguard.admin.dto.DashboardReportDto;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
+import com.onboardguard.admin.service.ReportService;
+import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.shared.common.enums.RequestStatus;
 // Note: Import your actual repositories for Candidates, Alerts, and Cases here
 import lombok.RequiredArgsConstructor;
@@ -15,13 +17,13 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ReportServiceImpl {
+public class ReportServiceImpl implements ReportService {
 
     // Injecting the required repositories to aggregate data
     private final ApprovalRequestRepository approvalRequestRepository;
 
     // (Assuming you have these repositories built in your other modules)
-    // private final CandidateRepository candidateRepository;
+     private final CandidateRepository candidateRepository;
     // private final AlertRepository alertRepository;
     // private final CaseRepository caseRepository;
 
@@ -30,6 +32,7 @@ public class ReportServiceImpl {
      * Caches the result in Redis under the "dashboardStats" bucket.
      * The key is a static string 'master' so all admins share the same cached stats.
      */
+    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "dashboardStats", key = "'master'")
     public DashboardReportDto generateDashboard() {
@@ -37,10 +40,10 @@ public class ReportServiceImpl {
 
         // 1. Gather Candidate Stats
         DashboardReportDto.CandidateStats candidateStats = DashboardReportDto.CandidateStats.builder()
-                .totalOnboarded(1050L)     // Replace with: candidateRepository.count()
-                .pendingScreening(25L)     // Replace with: candidateRepository.countByStatus("PENDING")
-                .cleared(900L)             // Replace with: candidateRepository.countByStatus("CLEARED")
-                .flagged(125L)             // Replace with: candidateRepository.countByStatus("FLAGGED")
+                .totalOnboarded(candidateRepository.count())
+                .pendingScreening(candidateRepository.countByStatus("PENDING"))
+                .cleared(candidateRepository.countByStatus("CLEARED"))
+                .flagged(candidateRepository.countByStatus("FLAGGED"))
                 .build();
 
         // 2. Gather Alert Stats

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onboardguard.admin.dto.UpdateSystemConfigDto;
 import com.onboardguard.admin.entity.ApprovalRequest;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
+import com.onboardguard.admin.service.SystemConfigAdminService;
 import com.onboardguard.shared.common.enums.ActionType;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import com.onboardguard.shared.common.enums.RoleCode;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SystemConfigAdminServiceImpl {
+public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
 
     private final SystemConfigRepository systemConfigRepository;
     private final ApprovalRequestRepository approvalRequestRepository;
@@ -31,6 +32,7 @@ public class SystemConfigAdminServiceImpl {
      * MAKER ACTION: An Admin requests to update a system configuration.
      * This does NOT update the config; it creates a PENDING approval request.
      */
+    @Override
     @Transactional
     public void requestConfigUpdate(Long configId, UpdateSystemConfigDto updateDto,
                                     Long currentUserId, RoleCode currentUserRole) {

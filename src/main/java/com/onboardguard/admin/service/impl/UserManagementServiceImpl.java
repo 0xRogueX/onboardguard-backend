@@ -1,5 +1,6 @@
 package com.onboardguard.admin.service.impl;
 
+import com.onboardguard.admin.service.UserManagementService;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.shared.common.enums.RoleCode;
@@ -16,16 +17,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserManagementServiceImpl {
+public class UserManagementServiceImpl implements UserManagementService {
 
     private final AppUserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 2. TOGGLE USER STATUS: Activates or Deactivates a user.
+     * 1. TOGGLE USER STATUS: Activates or Deactivates a user.
      */
+    @Override
     @Transactional
-    public void toggleUserStatus(Long targetUserId, boolean isActive, AppUser currentUser, RoleCode currentUserRole) {
+    public void toggleUserStatus(Long targetUserId, Boolean isActive, AppUser currentUser, RoleCode currentUserRole) {
         AppUser targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -47,8 +49,9 @@ public class UserManagementServiceImpl {
     }
 
     /**
-     * 3. GET ALL USERS: Used to populate the Admin User Grid.
+     * 2. GET ALL USERS: Used to populate the Admin User Grid.
      */
+    @Override
     @Transactional(readOnly = true)
     public Page<AppUser> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);

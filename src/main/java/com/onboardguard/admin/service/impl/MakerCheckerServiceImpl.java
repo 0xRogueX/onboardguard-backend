@@ -8,10 +8,10 @@ import com.onboardguard.admin.dto.ReviewApprovalRequestDto;
 import com.onboardguard.admin.dto.UpdateSystemConfigDto;
 import com.onboardguard.admin.entity.ApprovalRequest;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
+import com.onboardguard.admin.service.MakerCheckerService;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.shared.common.enums.RequestStatus;
-import com.onboardguard.shared.common.enums.RoleCode;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.config.entity.SystemConfig;
@@ -30,7 +30,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MakerCheckerServiceImpl {
+public class MakerCheckerServiceImpl implements MakerCheckerService {
 
     private final ApprovalRequestRepository approvalRequestRepository;
     private final SystemConfigRepository systemConfigRepository;
@@ -41,6 +41,7 @@ public class MakerCheckerServiceImpl {
     /**
      * 1. GET INBOX: Fetches all pending requests for the Super Admin Dashboard.
      */
+    @Override
     @Transactional(readOnly = true)
     public List<PendingApprovalDto> getPendingInbox() {
         return approvalRequestRepository.findByStatusOrderByRequestedAtDesc(RequestStatus.PENDING)
@@ -52,6 +53,7 @@ public class MakerCheckerServiceImpl {
     /**
      * 2. PROCESS REVIEW: The Super Admin makes their decision.
      */
+    @Override
     @Transactional
     public void processReview(Long requestId, ReviewApprovalRequestDto reviewDto, String checkerEmail) {
         log.info("Processing Maker-Checker review for Request ID: {}", requestId);
