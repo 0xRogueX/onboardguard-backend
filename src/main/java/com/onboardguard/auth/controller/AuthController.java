@@ -53,12 +53,4 @@ public class AuthController {
         authService.logout(authHeader);
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
     }
-
-    @PostMapping("/admin/officer")
-    @PreAuthorize("hasAuthority('" + RolePermissions.USER_CREATE + "')")
-    public ResponseEntity<ApiResponse<Void>> createOfficer(@Valid @RequestBody CreateOfficerDto dto) {
-        authService.createOfficer(dto, securityUtils.getCurrentUser());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Officer created successfully", null));
-    }
 }
