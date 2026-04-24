@@ -2,16 +2,15 @@ package com.onboardguard.admin.dto;
 
 import com.onboardguard.shared.common.enums.RequestStatus;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-@Data
-public class ReviewApprovalRequestDto {
+public record ReviewApprovalRequestDto(
 
-    @NotNull(message = "Review status is required")
-    private RequestStatus status; // APPROVED or REJECTED
+        @NotNull(message = "Review status is required")
+        RequestStatus status, // APPROVED or REJECTED
 
-    // Enforced in service layer if status == REJECTED
-    private String rejectionReason;
+        // Enforced in service layer if status == REJECTED
+        String rejectionReason,
 
-    private boolean isBypass = false;
-}
+        // Primitive boolean naturally defaults to false if missing from the JSON payload
+        boolean isBypass
+) {}

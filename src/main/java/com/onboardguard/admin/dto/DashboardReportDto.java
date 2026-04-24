@@ -1,43 +1,42 @@
 package com.onboardguard.admin.dto;
 
 import lombok.Builder;
-import lombok.Data;
-
 import java.util.Map;
 
-@Data
-@Builder
-public class DashboardReportDto {
+@Builder(toBuilder = true)
+public record DashboardReportDto(
+        CandidateStats candidateStats,
+        AlertStats alertStats,
+        CasePerformanceStats casePerformanceStats,
 
-    private CandidateStats candidateStats;
-    private AlertStats alertStats;
-    private CasePerformanceStats casePerformanceStats;
-    private Map<String, Long> categoryHitFrequency; // e.g., {"SANCTIONS": 45, "FRAUD": 12}
+        // e.g., {"SANCTIONS": 45, "FRAUD": 12, "PEP": 8}
+        Map<String, Long> categoryHitFrequency,
 
-    @Data
-    @Builder
-    public static class CandidateStats {
-        private long totalOnboarded;
-        private long pendingScreening;
-        private long cleared;
-        private long flagged;
-    }
+        // Essential for the Super Admin to know if they have pending approvals
+        long pendingMakerCheckerRequests
+) {
 
-    @Data
-    @Builder
-    public static class AlertStats {
-        private long totalGenerated;
-        private long openAlerts;
-        private long dismissedFalsePositives;
-        private long escalatedToCases;
-    }
+    @Builder(toBuilder = true)
+    public record CandidateStats(
+            long totalOnboarded,
+            long pendingScreening,
+            long cleared,
+            long flagged
+    ) {}
 
-    @Data
-    @Builder
-    public static class CasePerformanceStats {
-        private long totalOpenCases;
-        private long totalResolvedCases;
-        private double averageResolutionTimeHours; // SLA tracking
-        private long slaBreachedCases; // Cases that took too long
-    }
+    @Builder(toBuilder = true)
+    public record AlertStats(
+            long totalGenerated,
+            long openAlerts,
+            long dismissedFalsePositives,
+            long escalatedToCases
+    ) {}
+
+    @Builder(toBuilder = true)
+    public record CasePerformanceStats(
+            long totalOpenCases,
+            long totalResolvedCases,
+            double averageResolutionTimeHours, // For SLA tracking
+            long slaBreachedCases              // Cases that breached the SLA timeline
+    ) {}
 }

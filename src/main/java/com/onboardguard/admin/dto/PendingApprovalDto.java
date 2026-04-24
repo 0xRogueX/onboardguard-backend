@@ -2,36 +2,35 @@ package com.onboardguard.admin.dto;
 
 import com.onboardguard.shared.common.enums.ActionType;
 import com.onboardguard.shared.common.enums.RequestStatus;
-import lombok.Data;
+import lombok.Builder;
 
 import java.time.Instant;
 import java.util.Map;
 
-@Data
-public class PendingApprovalDto {
+@Builder
+public record PendingApprovalDto(
+        Long id,
 
-    private Long id;
+        // What is changing?
+        ActionType actionType,       // e.g., CREATE, UPDATE, DELETE
+        String targetEntityType,     // e.g., "SYSTEM_CONFIG", "WATCHLIST_ENTRY"
+        Long targetEntityId,         // Nullable if it's a brand new creation
 
-    // What is changing?
-    private ActionType actionType; // e.g., CREATE, UPDATE, DELETE
-    private String targetEntityType; // e.g., "SYSTEM_CONFIG", "WATCHLIST_ENTRY"
-    private Long targetEntityId; // Nullable if it's a brand new creation
+        // The proposed changes (Sent as a Map so the frontend can easily iterate and show "Old Value -> New Value")
+        Map<String, Object> payload,
 
-    // The proposed changes (Sent as a Map so the frontend can easily iterate and show "Old Value -> New Value")
-    private Map<String, Object> payload;
+        // Maker Info
+        Long requestedById,
+        String requestedByName,      // Human-readable name for the UI
+        Instant requestedAt,
 
-    // Maker Info
-    private Long requestedById;
-    private String requestedByName; // Human readable name for the UI
-    private Instant requestedAt;
+        // Checker Info
+        Long reviewedById,
+        String reviewedByName,
+        Instant reviewedAt,
 
-    // Checker Info
-    private Long reviewedById;
-    private String reviewedByName;
-    private Instant reviewedAt;
-
-    // Status & Overrides
-    private RequestStatus status;
-    private String rejectionReason;
-    private Boolean isBypass; // Flags if Super Admin used emergency override
-}
+        // Status & Overrides
+        RequestStatus status,
+        String rejectionReason,
+        Boolean isBypass             // Flags if Super Admin used emergency override
+) {}

@@ -55,17 +55,17 @@ public class AuditLogServiceImpl implements AuditLogService {
     public List<AuditLogDto> getEntityHistory(String entityType, Long entityId) {
         return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId)
                 .stream()
-                .map(log -> {
-                    AuditLogDto dto = new AuditLogDto();
-                    dto.setId(log.getId());
-                    dto.setAction(log.getAction());
-                    dto.setOldStatus(log.getOldStatus());
-                    dto.setNewStatus(log.getNewStatus());
-                    dto.setPerformedBy(log.getPerformedBy());
-                    dto.setActorRole(log.getActorRole());
-                    dto.setRemarks(log.getRemarks());
-                    dto.setCreatedAt(log.getCreatedAt());
-                    return dto;
-                }).collect(Collectors.toList());
+                .map(log -> AuditLogDto.builder()
+                        .id(log.getId())
+                        .action(log.getAction())
+                        .oldStatus(log.getOldStatus())
+                        .newStatus(log.getNewStatus())
+                        .performedBy(log.getPerformedBy())
+                        .actorRole(log.getActorRole())
+                        .remarks(log.getRemarks())
+                        .createdAt(log.getCreatedAt())
+                        .build()
+                )
+                .toList(); // Replaced Collectors.toList() with modern Java 16+ .toList()
     }
 }
