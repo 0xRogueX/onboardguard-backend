@@ -13,7 +13,7 @@ public record BusinessLogEvent(
         String action,      // e.g., "APPROVED", "ESCALATED"
         String oldStatus,
         String newStatus,
-        String performedBy, // Username
+        Long performedBy, // ID of the user who performed the action
         String actorRole,   // e.g., "ROLE_OFFICER_L2"
         String remarks      // e.g., "ID is blurry"
 ) {}
