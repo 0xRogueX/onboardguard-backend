@@ -4,6 +4,7 @@ import com.onboardguard.shared.common.entity.BaseEntity;
 import com.onboardguard.shared.common.enums.SeverityLevel;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.RelationTargetAuditMode;
@@ -18,7 +19,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Audited
 public class WatchlistEntry extends BaseEntity {
 

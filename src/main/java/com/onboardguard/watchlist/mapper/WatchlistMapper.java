@@ -1,7 +1,9 @@
 package com.onboardguard.watchlist.mapper;
 
+import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
 import com.onboardguard.watchlist.entity.WatchlistAlias;
+import com.onboardguard.watchlist.entity.WatchlistCategory;
 import com.onboardguard.watchlist.entity.WatchlistEntry;
 import com.onboardguard.watchlist.entity.WatchlistEvidenceDocument;
 import org.mapstruct.Mapper;
@@ -33,4 +35,10 @@ public interface WatchlistMapper {
      * Maps the Evidence entity to the nested EvidenceDto
      */
     WatchlistEntryResponseDto.EvidenceDto toEvidenceDto(WatchlistEvidenceDocument document);
+
+    /**
+     * Maps the Category entity to the CategoryDto
+     */
+    @Mapping(target = "categoryCode", expression = "java(com.onboardguard.shared.common.enums.CategoryCode.valueOf(category.getCategoryCode()))")
+    WatchlistCategoryDto toCategoryDto(WatchlistCategory category);
 }

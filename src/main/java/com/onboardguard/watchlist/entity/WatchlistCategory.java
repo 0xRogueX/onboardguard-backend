@@ -3,6 +3,7 @@ package com.onboardguard.watchlist.entity;
 import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class WatchlistCategory extends BaseEntity {
 
     @Column(name = "category_code", unique = true, nullable = false)
