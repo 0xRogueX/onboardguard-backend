@@ -81,14 +81,8 @@ public class WatchlistServiceImpl implements WatchlistService {
     public List<WatchlistCategoryDto> getActiveCategories() {
         return categoryRepository.findAll().stream()
                 .filter(WatchlistCategory::getIsActive)
-                .map(category -> {
-                    WatchlistCategoryDto dto = new WatchlistCategoryDto();
-                    dto.setCategoryCode(CategoryCode.valueOf(category.getCategoryCode()));
-                    dto.setCategoryName(category.getCategoryName());
-                    dto.setDescription(category.getDescription());
-                    dto.setBaseScoreMultiplier(category.getBaseScoreMultiplier());
-                    return dto;
-                }).collect(Collectors.toList());
+                .map(watchlistMapper::toCategoryDto)
+                .collect(Collectors.toList());
     }
 
     // ══════════════════════════════════════════════════════════════
