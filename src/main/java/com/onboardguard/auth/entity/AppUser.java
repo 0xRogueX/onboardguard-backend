@@ -4,6 +4,8 @@ import com.onboardguard.shared.common.entity.BaseEntity;
 import com.onboardguard.shared.common.enums.RoleCode;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
 import java.time.Instant;
 
 @Entity
@@ -12,7 +14,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class AppUser extends BaseEntity {
 
     @Column(name = "email", nullable = false, length = 255, unique = true)
