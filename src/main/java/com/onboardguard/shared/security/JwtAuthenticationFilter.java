@@ -6,9 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -29,8 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         try {
             String token = getTokenFromRequest(request);
@@ -39,9 +37,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (tokenBlacklistService.isBlacklisted(token)) {
                     log.warn("Blacklist token used - IP={}", request.getRemoteAddr());
-                    SecurityContextHolder.clearContext();  // Ensure no authentication is set
-                    filterChain.doFilter(request, response);  // Let EntryPoint handle the 401 response
-                    return;  // Exit early since token is invalid
+                    SecurityContextHolder.clearContext(); // Ensure no authentication is set
+                    filterChain.doFilter(request, response); // Let EntryPoint handle the 401 response
+                    return; // Exit early since token is invalid
                 }
 
                 String email = jwtTokenProvider.getUsername(token);
@@ -50,15 +48,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
-                        userDetails.getAuthorities()
-                );
+                        userDetails.getAuthorities());
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
             log.warn("Auth filter error: {} IP={}", e.getMessage(), request.getRemoteAddr());
-            // If token validation throws an exception, clear context so EntryPoint handles it
+            // If token validation throws an exception, clear context so EntryPoint handles
+            // it
             SecurityContextHolder.clearContext();
         }
 
