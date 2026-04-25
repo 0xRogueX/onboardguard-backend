@@ -4,6 +4,7 @@ import com.onboardguard.admin.dto.DashboardReportDto;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
 import com.onboardguard.admin.service.ReportService;
 import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.shared.common.enums.RequestStatus;
 // Note: Import your actual repositories for Candidates, Alerts, and Cases here
 import lombok.RequiredArgsConstructor;
@@ -41,9 +42,9 @@ public class ReportServiceImpl implements ReportService {
         // 1. Gather Candidate Stats
         DashboardReportDto.CandidateStats candidateStats = DashboardReportDto.CandidateStats.builder()
                 .totalOnboarded(candidateRepository.count())
-                .pendingScreening(candidateRepository.countByStatus("PENDING"))
-                .cleared(candidateRepository.countByStatus("CLEARED"))
-                .flagged(candidateRepository.countByStatus("FLAGGED"))
+                .pendingScreening(candidateRepository.countByOnboardingStatus(OnboardingStatus.SCREENING_IN_PROGRESS))
+                .cleared(candidateRepository.countByOnboardingStatus(OnboardingStatus.SCREENING_CLEARED))
+                .flagged(candidateRepository.countByOnboardingStatus(OnboardingStatus.FLAGGED))
                 .build();
 
         // 2. Gather Alert Stats
