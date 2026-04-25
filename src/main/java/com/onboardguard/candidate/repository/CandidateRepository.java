@@ -1,9 +1,13 @@
 package com.onboardguard.candidate.repository;
 
 import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.enums.OnboardingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CandidateRepository extends JpaRepository<Candidate, Long> {
+
     Optional<Candidate> findByUserId(Long userId);
+
+    Long countByOnboardingStatus(OnboardingStatus onboardingStatus);
 }
