@@ -9,7 +9,7 @@ public record UserResponseDto(
         String email,
         String phone,
         RoleCode role,
-        boolean active,
+        boolean isActive,
         boolean locked,
         Instant lastLoginAt,
         Instant createdAt

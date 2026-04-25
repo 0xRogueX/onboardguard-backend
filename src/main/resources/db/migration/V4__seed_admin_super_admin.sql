@@ -17,7 +17,7 @@ INSERT INTO users (
     created_at,
     updated_at
 ) VALUES (
-    'superadmin@onboardguard.com',
+    'dev.vivek.dadhaniya@gmail.com',
     'Vivek Dadhaniya',
     '+911005550001',
     '$2a$10$wT5H5dK6X.t/b.4fL7hQv.uM.X6w9.e/B7/8iR.N9.B/3m.A1.M2.',
@@ -28,7 +28,7 @@ INSERT INTO users (
     CURRENT_TIMESTAMP
 ),
 (
-    'admin@onboardguard.com',
+    'vrundachavda112@gmail.com',
     'Vrunda Chavda',
     '+911005550002',
     '$2a$10$wT5H5dK6X.t/b.4fL7hQv.uM.X6w9.e/B7/8iR.N9.B/3m.A1.M2.',
