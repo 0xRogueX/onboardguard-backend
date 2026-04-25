@@ -3,6 +3,8 @@ package com.onboardguard.watchlist.dto;
 import com.onboardguard.shared.common.enums.CategoryCode;
 import com.onboardguard.shared.common.enums.SeverityLevel;
 import lombok.Data;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,9 +45,9 @@ public class WatchlistEntryResponseDto {
     private boolean isActive;
     private String notes;
     private String approvedBy;
-    private LocalDateTime approvedAt;
+    private Instant approvedAt;
     private String createdBy;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     // Nested Collections for the Frontend UI
     private List<AliasDto> aliases;

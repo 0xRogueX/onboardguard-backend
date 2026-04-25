@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onboardguard.admin.dto.SystemConfigResponseDto;
 import com.onboardguard.admin.dto.UpdateSystemConfigDto;
 import com.onboardguard.admin.entity.ApprovalRequest;
+import com.onboardguard.admin.mapper.SystemConfigMapper;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
 import com.onboardguard.admin.service.SystemConfigAdminService;
 import com.onboardguard.shared.common.enums.ActionType;
@@ -30,6 +31,7 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
     private final ApprovalRequestRepository approvalRequestRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final SystemConfigMapper systemConfigMapper;
 
     /**
      * MAKER ACTION: An Admin requests to update a system configuration.
@@ -88,23 +90,8 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
     @Override
     @Transactional(readOnly = true)
     public List<SystemConfigResponseDto> getAllConfigs() {
-        return systemConfigRepository.findAll()
-                .stream()
-                .map(config -> {
-                    // Mask the value if it's marked as sensitive in the database
-                    String displayValue = Boolean.TRUE.equals(config.getIsSensitive())
-                            ? "********"
-                            : config.getConfigValue();
-
-                    return SystemConfigResponseDto.builder()
-                            .id(config.getId())
-                            .configKey(config.getConfigKey()) // e.g., "RISK_THRESHOLD"
-                            .configValue(displayValue)        // Masked or raw
-                            .configType(String.valueOf(config.getConfigType()))
-                            .description(config.getDescription())
-                            .isSensitive(config.getIsSensitive())
-                            .build();
-                })
+        return systemConfigRepository.findAll().stream()
+                .map(systemConfigMapper::toResponseDto)
                 .toList();
     }
 

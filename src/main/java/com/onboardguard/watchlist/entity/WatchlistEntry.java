@@ -9,6 +9,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.RelationTargetAuditMode;
 import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -63,5 +65,5 @@ public class WatchlistEntry extends BaseEntity {
 
     private String notes;
     private String approvedBy;
-    private LocalDateTime approvedAt;
+    private Instant approvedAt;
 }
