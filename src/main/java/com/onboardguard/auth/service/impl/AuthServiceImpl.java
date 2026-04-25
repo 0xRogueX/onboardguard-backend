@@ -104,8 +104,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     @Override
-    public void createOfficer(CreateOfficerDto dto) {
-        AppUser createdBy = securityUtils.getCurrentUser();
+    public void createOfficer(CreateOfficerDto dto, AppUser createdBy) {
 
         if (userRepository.existsByEmail(dto.email())) {
             throw new BadRequestException("An account with this email already exists.");
