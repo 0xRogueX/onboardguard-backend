@@ -22,7 +22,6 @@ public class ReportServiceImpl implements ReportService {
     // Injecting the required repositories to aggregate data
     private final ApprovalRequestRepository approvalRequestRepository;
 
-    // (Assuming you have these repositories built in your other modules)
      private final CandidateRepository candidateRepository;
     // private final AlertRepository alertRepository;
     // private final CaseRepository caseRepository;
