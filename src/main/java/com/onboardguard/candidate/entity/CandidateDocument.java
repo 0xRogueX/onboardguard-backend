@@ -2,8 +2,10 @@ package com.onboardguard.candidate.entity;
 
 import com.onboardguard.candidate.enums.DocumentStatus;
 import com.onboardguard.candidate.enums.DocumentType;
+import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import java.time.Instant;
 
 @Entity
@@ -12,12 +14,8 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CandidateDocument {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@SuperBuilder
+public class CandidateDocument extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id", nullable = false)

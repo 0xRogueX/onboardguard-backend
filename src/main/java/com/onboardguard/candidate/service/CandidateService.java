@@ -6,11 +6,11 @@ import com.onboardguard.candidate.dto.response.CandidateStatusResponseDto;
 
 public interface CandidateService {
 
-    void savePersonalDetails(Long userId, PersonalDetailsRequestDto dto);
+    void savePersonalDetails(PersonalDetailsRequestDto dto);
 
-    void saveProfessionalDetails(Long userId, ProfessionalDetailsRequestDto dto);
+    void saveProfessionalDetails(ProfessionalDetailsRequestDto dto);
 
-    void submitProfile(Long userId);
+    void submitProfile();
 
-    CandidateStatusResponseDto getStatus(Long userId);
+    CandidateStatusResponseDto getStatus();
 }

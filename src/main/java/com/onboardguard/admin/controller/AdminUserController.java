@@ -44,7 +44,7 @@ public class AdminUserController {
         log.info("Admin {} is provisioning a new {}", currentUser.getEmail(), dto.role());
 
         // Delegate business logic to the Auth module
-        authService.createOfficer(dto, currentUser, dto.role());
+        authService.createOfficer(dto, currentUser);
 
         return ResponseEntity.ok(ApiResponse.success("Officer provisioned successfully. Temporary credentials have been emailed." , null));
     }

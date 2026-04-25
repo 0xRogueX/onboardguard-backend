@@ -1,20 +1,16 @@
 package com.onboardguard.auth.controller;
 
-import com.onboardguard.auth.dto.request.CreateOfficerDto;
 import com.onboardguard.auth.dto.request.LoginRequestDto;
 import com.onboardguard.auth.dto.request.RegisterCandidateDto;
 import com.onboardguard.auth.dto.response.CandidateLoginResponseDto;
 import com.onboardguard.auth.dto.response.StaffLoginResponseDto;
 import com.onboardguard.auth.service.AuthService;
 import com.onboardguard.shared.common.dto.ApiResponse;
-import com.onboardguard.shared.security.RolePermissions;
-import com.onboardguard.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final SecurityUtils securityUtils;
 
     @PostMapping("/login/candidate")
     public ResponseEntity<ApiResponse<CandidateLoginResponseDto>> loginCandidate(

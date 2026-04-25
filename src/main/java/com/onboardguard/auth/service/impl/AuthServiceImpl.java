@@ -18,6 +18,7 @@ import com.onboardguard.shared.security.CustomUserDetails;
 import com.onboardguard.shared.security.CustomUserDetailsService;
 import com.onboardguard.shared.security.JwtTokenProvider;
 import com.onboardguard.shared.security.SecurityConstants;
+import com.onboardguard.shared.security.SecurityUtils;
 import com.onboardguard.shared.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final OfficerCredentialGenerator credentialGenerator;
     private final AuthMapper authMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final SecurityUtils securityUtils;
 
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -62,7 +64,6 @@ public class AuthServiceImpl implements AuthService {
         updateLastLogin(dto.email());
         log.info("Candidate login: email={}", dto.email());
 
-        // Fix 1 applied: renamed to toCandidateDto
         return authMapper.toCandidateDto(principal, token, jwtExpirationMs / 1000);
     }
 
@@ -79,7 +80,6 @@ public class AuthServiceImpl implements AuthService {
         updateLastLogin(dto.email());
         log.info("Staff login: email={} role={}", dto.email(), principal.getRole().name());
 
-        // Fix 1 applied: renamed to toStaffDto
         return authMapper.toStaffDto(principal, token, principal.getRole().name(), jwtExpirationMs / 1000);
     }
 
@@ -94,17 +94,18 @@ public class AuthServiceImpl implements AuthService {
         AppUser saved = userRepository.save(user);
 
         String token = jwtTokenProvider.generateTokenForUser(saved);
+        updateLastLogin(saved.getEmail()); // Ensure last login is set on registration
         eventPublisher.publishEvent(new CandidateRegisteredEvent(saved.getEmail(), saved.getFullName()));
 
         log.info("Candidate registered: email={}", saved.getEmail());
 
-        // Fix 1 applied: uses AppUser overload — email/fullName correctly pulled from entity
         return authMapper.toCandidateDto(saved, token, jwtExpirationMs / 1000);
     }
 
     @Transactional
     @Override
-    public void createOfficer(CreateOfficerDto dto, AppUser createdBy, RoleCode role) {
+    public void createOfficer(CreateOfficerDto dto, AppUser createdBy) {
+
         if (userRepository.existsByEmail(dto.email())) {
             throw new BadRequestException("An account with this email already exists.");
         }
@@ -117,27 +118,19 @@ public class AuthServiceImpl implements AuthService {
         // 1. Generate secure password
         String rawPassword = credentialGenerator.generatePassword();
 
-        // 3. Create the Officer entity
-        AppUser officer = AppUser.builder()
-                .email(dto.email())
-                .fullName(dto.fullName())
-                .phone(dto.phone())
-                .passwordHash(passwordEncoder.encode(rawPassword))
-                .role(role)
-                .active(true)
-                .locked(false)
-                .build();
+        // 2. Create the Officer entity using Mapper
+        AppUser officer = authMapper.toEntity(dto, passwordEncoder.encode(rawPassword), createdBy);
 
         userRepository.save(officer);
 
-        // 4. Fire event to trigger 'officer-welcome.html' async email via EmailNotificationListener
+        // 3. Fire event to trigger 'officer-welcome.html' async email
         eventPublisher.publishEvent(
                 new OfficerCreatedEvent(
-                        officer.getEmail(),      // 1. officerEmail
-                        officer.getFullName(),   // 2. officerName
-                        rawPassword,             // 3. plainPassword
-                        role.name(),             // 4. officerRole
-                        createdBy.getEmail()     // 5. createdByEmail
+                        officer.getEmail(),
+                        officer.getFullName(),
+                        rawPassword,
+                        officer.getRole().name(),
+                        createdBy.getEmail()
                 )
         );
         log.info("Officer created: email={} by={}", officer.getEmail(), createdBy.getEmail());
@@ -146,7 +139,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(String authHeader) {
         if (authHeader == null || !authHeader.startsWith(SecurityConstants.BEARER_PREFIX)) {
-            throw new IllegalArgumentException("Missing or invalid Authorization header");
+            throw new BadRequestException("Missing or invalid Authorization header");
         }
         String token = authHeader.substring(SecurityConstants.BEARER_PREFIX.length());
         String email = jwtTokenProvider.getUsername(token);

@@ -28,7 +28,7 @@ public interface AuthMapper {
     @Mapping(target = "fullName",      source = "dto.fullName")
     @Mapping(target = "phone",         source = "dto.phone")
     @Mapping(target = "passwordHash",  source = "encodedPassword")
-    @Mapping(target = "role",          constant = "ROLE_OFFICER_L1")
+    @Mapping(target = "role",          source = "dto.role")
     @Mapping(target = "active",        constant = "true")
     @Mapping(target = "locked",        constant = "false")
     @Mapping(target = "createdByUser", source = "createdBy")

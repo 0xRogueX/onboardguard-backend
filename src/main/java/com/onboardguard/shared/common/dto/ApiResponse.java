@@ -18,7 +18,9 @@ public class ApiResponse<T> {
     private LocalDateTime timestamp = LocalDateTime.now();
     private boolean success;
     private String message;
+    private String errorCode;
     private T data;
+    private java.util.Map<String, String> errors;
 
     // Helper method for quick success responses
     public static <T> ApiResponse<T> success(String message, T data) {
@@ -26,6 +28,29 @@ public class ApiResponse<T> {
                 .success(true)
                 .message(message)
                 .data(data)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> success(String message) {
+        return success(message, null);
+    }
+
+    // Helper for generic failures
+    public static <T> ApiResponse<T> failure(String message, String errorCode) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .errorCode(errorCode)
+                .build();
+    }
+
+    // Helper for validation errors
+    public static <T> ApiResponse<T> validationError(String message, java.util.Map<String, String> errors) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .errorCode("VALIDATION_ERROR")
+                .errors(errors)
                 .build();
     }
 }
