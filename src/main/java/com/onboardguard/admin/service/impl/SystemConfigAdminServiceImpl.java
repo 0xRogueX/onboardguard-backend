@@ -2,6 +2,7 @@ package com.onboardguard.admin.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onboardguard.admin.dto.SystemConfigResponseDto;
 import com.onboardguard.admin.dto.UpdateSystemConfigDto;
 import com.onboardguard.admin.entity.ApprovalRequest;
 import com.onboardguard.admin.repository.ApprovalRequestRepository;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -76,6 +79,33 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
             log.error("Failed to serialize UpdateSystemConfigDto for config ID: {}", configId, e);
             throw new RuntimeException("System error: Could not process the configuration update payload.");
         }
+    }
+
+    /**
+     * GET ALL CONFIGS: Fetches the system configurations for the Admin UI grid.
+     * Automatically masks sensitive values (like API keys or passwords).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<SystemConfigResponseDto> getAllConfigs() {
+        return systemConfigRepository.findAll()
+                .stream()
+                .map(config -> {
+                    // Mask the value if it's marked as sensitive in the database
+                    String displayValue = Boolean.TRUE.equals(config.getIsSensitive())
+                            ? "********"
+                            : config.getConfigValue();
+
+                    return SystemConfigResponseDto.builder()
+                            .id(config.getId())
+                            .configKey(config.getConfigKey()) // e.g., "RISK_THRESHOLD"
+                            .configValue(displayValue)        // Masked or raw
+                            .configType(String.valueOf(config.getConfigType()))
+                            .description(config.getDescription())
+                            .isSensitive(config.getIsSensitive())
+                            .build();
+                })
+                .toList();
     }
 
     // ══════════════════════════════════════════════════════════════
