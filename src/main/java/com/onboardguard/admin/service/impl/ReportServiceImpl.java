@@ -6,7 +6,6 @@ import com.onboardguard.admin.service.ReportService;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.shared.common.enums.RequestStatus;
-// Note: Import your actual repositories for Candidates, Alerts, and Cases here
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
