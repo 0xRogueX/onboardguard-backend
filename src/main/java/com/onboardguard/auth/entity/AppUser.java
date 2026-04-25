@@ -5,6 +5,7 @@ import com.onboardguard.shared.common.enums.RoleCode;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
 import java.time.Instant;
 
 @Entity

@@ -3,6 +3,7 @@ package com.onboardguard.watchlist.entity;
 import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "watchlist_aliases")
@@ -10,7 +11,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class WatchlistAlias extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

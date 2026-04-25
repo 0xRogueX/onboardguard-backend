@@ -3,6 +3,8 @@ package com.onboardguard.watchlist.entity;
 import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,7 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class WatchlistEvidenceDocument extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
