@@ -2,6 +2,7 @@ package com.onboardguard.admin.service.impl;
 
 import com.onboardguard.admin.dto.AuditLogDto;
 import com.onboardguard.admin.entity.AuditLog;
+import com.onboardguard.admin.mapper.AuditLogMapper;
 import com.onboardguard.admin.repository.AuditLogRepository;
 import com.onboardguard.admin.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuditLogServiceImpl implements AuditLogService {
     private final AuditLogRepository auditLogRepository;
+    private final AuditLogMapper auditLogMapper;
 
     /**
      * 1. THE LISTENER: Asynchronously catches events fired from Watchlist, Candidate, or Officer modules.
@@ -53,19 +55,10 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     @Transactional(readOnly = true)
     public List<AuditLogDto> getEntityHistory(String entityType, Long entityId) {
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId)
+        return auditLogRepository
+                .findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId)
                 .stream()
-                .map(log -> AuditLogDto.builder()
-                        .id(log.getId())
-                        .action(log.getAction())
-                        .oldStatus(log.getOldStatus())
-                        .newStatus(log.getNewStatus())
-                        .performedBy(log.getPerformedBy())
-                        .actorRole(log.getActorRole())
-                        .remarks(log.getRemarks())
-                        .createdAt(log.getCreatedAt())
-                        .build()
-                )
-                .toList(); // Replaced Collectors.toList() with modern Java 16+ .toList()
+                .map(auditLogMapper::toDto)
+                .toList();
     }
 }
