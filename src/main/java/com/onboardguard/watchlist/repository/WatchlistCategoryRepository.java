@@ -1,5 +1,6 @@
 package com.onboardguard.watchlist.repository;
 
+import com.onboardguard.shared.common.enums.CategoryCode;
 import com.onboardguard.watchlist.entity.WatchlistCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,7 +16,7 @@ public interface WatchlistCategoryRepository extends JpaRepository<WatchlistCate
      * Replaces the previous findAll().stream().filter() pattern which loaded every
      * category into memory just to find one.
      */
-    Optional<WatchlistCategory> findByCategoryCode(String categoryCode);
+    Optional<WatchlistCategory> findByCode(CategoryCode code);
 
     /**
      * Used by WatchlistServiceImpl.getActiveCategories().

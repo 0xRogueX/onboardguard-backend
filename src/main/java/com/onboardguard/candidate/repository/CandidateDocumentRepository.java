@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface CandidateDocumentRepository extends JpaRepository<CandidateDocument, Long> {
     List<CandidateDocument> findByCandidateId(Long candidateId);
-    Optional<CandidateDocument> findByCandidateIdAndDocumentType(Long candidateId, CandidateDocumentType candidateDocumentType);
+    Optional<CandidateDocument> findByCandidateIdAndCandidateDocumentType(Long candidateId, CandidateDocumentType candidateDocumentType);
 }

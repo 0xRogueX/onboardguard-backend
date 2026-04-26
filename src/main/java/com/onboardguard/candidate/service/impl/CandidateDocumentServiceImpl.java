@@ -45,7 +45,7 @@ public class CandidateDocumentServiceImpl {
             throw new BadRequestException("Onboarding is completed. No further documents can be uploaded.");
         }
 
-        Optional<CandidateDocument> existingDocOpt = documentRepository.findByCandidateIdAndDocumentType(candidate.getId(), candidateDocumentType);
+        Optional<CandidateDocument> existingDocOpt = documentRepository.findByCandidateIdAndCandidateDocumentType(candidate.getId(), candidateDocumentType);
         CandidateDocument document;
 
         if (existingDocOpt.isPresent()) {
