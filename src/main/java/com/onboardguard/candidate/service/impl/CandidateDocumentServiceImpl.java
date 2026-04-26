@@ -108,7 +108,7 @@ public class CandidateDocumentServiceImpl {
                 .toList();
     }
 
-    private DocumentResponseDto mapToResponseWithUrl(CandidateDocument document) {
+    public DocumentResponseDto mapToResponseWithUrl(CandidateDocument document) {
         String presignedUrl = cloudStorageService.generatePresignedUrl(
                 document.getCloudStorageKey(),
                 Duration.ofMinutes(15)
