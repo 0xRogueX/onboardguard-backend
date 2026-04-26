@@ -41,20 +41,14 @@ public class ScreeningOrchestrationService {
 
     private static final String KEY_ACTIVE_STRATEGY = "screening.active.strategy";
 
-    // All ScreeningStrategy beans injected as a Map keyed by bean name.
-    // "basicScreeningStrategy"    -> BasicScreeningStrategy
-    // "advancedScreeningStrategy" -> AdvancedScreeningStrategy
     private final Map<String, ScreeningStrategy> strategyMap;
 
-    private final CandidateRepository       candidateRepository;
+    private final CandidateRepository candidateRepository;
     private final ScreeningResultRepository screeningResultRepository;
-    private final WatchlistEntryRepository  watchlistEntryRepository;
-    private final SystemConfigService       systemConfigService;
-    private final RiskScoringEngine         riskScoringEngine;
-
-    private final ScreeningMapper           screeningMapper;
-
-    // Primary entry point
+    private final WatchlistEntryRepository watchlistEntryRepository;
+    private final SystemConfigService systemConfigService;
+    private final RiskScoringEngine riskScoringEngine;
+    private final ScreeningMapper screeningMapper;
 
     @Transactional
     public ScreeningResultDto runScreening(Long candidateId) {
@@ -67,7 +61,7 @@ public class ScreeningOrchestrationService {
             throw new IllegalStateException("Screening already in progress for candidate: " + candidateId);
         }
 
-        // 1. Resolve strategy (Dynamic DI — reads DB config on every call)
+        // 1. Resolve strategy (Dynamic DI - reads DB config on every call)
         ScreeningStrategy strategy = resolveActiveStrategy();
         log.info("Using strategy={} for candidateId={}", strategy.strategyName(), candidateId);
 
@@ -90,7 +84,7 @@ public class ScreeningOrchestrationService {
             ScreeningResultDto resultDto = strategy.screen(candidateData);
 
             // 6. Merge strategy output into the existing PENDING entity via mapper
-            //    (updates riskScore, riskLevel, status, timestamps — never touches id/thresholds)
+            //    (updates riskScore, riskLevel, status, timestamps - never touches id/thresholds)
             screeningMapper.updateScreeningResultFromDto(resultDto, pendingResult);
 
             // 7. Build and attach ScreeningMatch entities via mapper
@@ -157,7 +151,7 @@ public class ScreeningOrchestrationService {
     }
 
     /**
-     * Converts all MatchDetailDtos → ScreeningMatch entities via mapper,
+     * Converts all MatchDetailDtos -> ScreeningMatch entities via mapper,
      * then wires the watchlistEntry proxy and attaches to the result.
      */
     private void persistMatches(ScreeningResultDto resultDto, ScreeningResult result) {
