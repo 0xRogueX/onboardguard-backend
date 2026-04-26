@@ -1,7 +1,7 @@
 package com.onboardguard.candidate.controller;
 
 import com.onboardguard.candidate.dto.response.DocumentResponseDto;
-import com.onboardguard.candidate.enums.DocumentType;
+import com.onboardguard.candidate.enums.CandidateDocumentType;
 import com.onboardguard.candidate.service.impl.CandidateDocumentServiceImpl;
 import com.onboardguard.shared.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +24,12 @@ public class CandidateDocumentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<DocumentResponseDto>> uploadDocument(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("documentType") DocumentType documentType) {
+            @RequestParam("candidateDocumentType") CandidateDocumentType candidateDocumentType) {
 
-        DocumentResponseDto uploadedDoc = documentService.uploadDocument(file, documentType);
+        DocumentResponseDto uploadedDoc = documentService.uploadDocument(file, candidateDocumentType);
 
         return ResponseEntity.ok(ApiResponse.success(
-                documentType + " document uploaded successfully", uploadedDoc));
+                candidateDocumentType + " document uploaded successfully", uploadedDoc));
     }
 
     @GetMapping

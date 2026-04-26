@@ -105,7 +105,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         DocumentRejectedEvent event = new DocumentRejectedEvent(
                 candidate.getUser().getEmail(), // Assuming Candidate has a mapping to User
                 candidate.getPersonalDetail().getFirstName() + " " + candidate.getPersonalDetail().getLastName(),
-                document.getDocumentType().name(),
+                document.getCandidateDocumentType().name(),
                 reason
         );
         eventPublisher.publishEvent(event);

@@ -116,7 +116,7 @@ public class WatchlistSyncServiceImpl implements WatchlistSyncService {
                 .id(entry.getId().toString())
                 .primaryName(entry.getPrimaryNameNormalized())
                 .aliases(aliases)
-                .categoryCode(entry.getCategory().getCategoryCode())
+                .categoryCode(entry.getCategory().getCode().name())
                 .severity(String.valueOf(entry.getSeverity()))
                 .organizationName(entry.getOrganizationName())
                 .isActive(entry.getIsActive())

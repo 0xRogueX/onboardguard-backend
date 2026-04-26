@@ -1,19 +1,28 @@
 package com.onboardguard.watchlist.entity;
 
 import com.onboardguard.shared.common.entity.BaseEntity;
+import com.onboardguard.shared.common.enums.EvidenceType;
+import com.onboardguard.shared.common.enums.FileFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.time.LocalDateTime;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
-@Table(name = "watchlist_evidence_documents")
+@Table(
+    name = "watchlist_evidence_documents",
+    indexes = {
+        @Index(name = "idx_entry_id", columnList = "entry_id"),
+        @Index(name = "idx_source_id", columnList = "source_id")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
+@Audited
 public class WatchlistEvidenceDocument extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -21,10 +30,22 @@ public class WatchlistEvidenceDocument extends BaseEntity {
     private WatchlistEntry entry;
 
     @Column(nullable = false)
-    private String cloudStorageKey; // S3 Key
+    private String cloudStorageKey; // S3 / GCS key
 
-    private String documentTitle;
-    private String documentType; // PDF, JPG
-    private String uploadedBy;
-    private LocalDateTime uploadedAt;
+    @Column(nullable = false)
+    private String fileName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private FileFormat fileFormat;
+
+    @Enumerated(EnumType.STRING)
+    private EvidenceType evidenceType; 
+    // COURT_ORDER, NEWS_ARTICLE, REGULATORY_NOTICE
+
+    // Link to source (VERY IMPORTANT)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_id", nullable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
+    private WatchlistSource source;
 }

@@ -3,6 +3,7 @@ package com.onboardguard.candidate.entity;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.candidate.enums.CandidateType;
 import com.onboardguard.candidate.enums.OnboardingStatus;
+import com.onboardguard.screening.enums.ScreeningStatus;
 import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +34,9 @@ public class Candidate extends BaseEntity {
     @Column(nullable = false)
     private OnboardingStatus onboardingStatus;
 
+    @Enumerated(EnumType.STRING)
+    private ScreeningStatus screeningStatus;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String formDraft;
@@ -48,4 +52,34 @@ public class Candidate extends BaseEntity {
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CandidateDocument> documents = new ArrayList<>();
+
+    // --- Convenience Methods for Screening Mapper ---
+
+    public String getFullName() {
+        if (personalDetail == null) return null;
+        String first = personalDetail.getFirstName() != null ? personalDetail.getFirstName() : "";
+        String middle = personalDetail.getMiddleName() != null ? personalDetail.getMiddleName() : "";
+        String last = personalDetail.getLastName() != null ? personalDetail.getLastName() : "";
+        return String.join(" ", first, middle, last).replaceAll("\\s+", " ").trim();
+    }
+
+    public String getPanNumber() {
+        return personalDetail != null ? personalDetail.getPanNumber() : null;
+    }
+
+    public String getAadhaarNumber() {
+        return personalDetail != null ? personalDetail.getAdhaarNumber() : null;
+    }
+
+    public String getPassportNumber() {
+        return personalDetail != null ? personalDetail.getPassportNumber() : null;
+    }
+
+    public String getOrganizationName() {
+        return professionalDetail != null ? professionalDetail.getCurrentOrganization() : null;
+    }
+
+    public String getDesignation() {
+        return professionalDetail != null ? professionalDetail.getCurrentDesignation() : null;
+    }
 }
