@@ -6,7 +6,6 @@ import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.dto.ApiResponse;
 import com.onboardguard.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

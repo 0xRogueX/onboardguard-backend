@@ -7,6 +7,9 @@ public interface AlertService {
 
     AlertDetailDto acknowledgeAlert(Long alertId, Long officerId);
 
+    @Transactional
+    AlertDetailDto claimNextAvailableAlert(Long officerId);
+
     void dismissAlert(Long alertId, Long officerId, String reason);
 
     Long convertToCase(Long alertId, Long officerId);

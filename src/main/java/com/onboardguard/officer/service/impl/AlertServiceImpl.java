@@ -50,6 +50,28 @@ public class AlertServiceImpl implements AlertService {
         return alertMapper.toDto(alertRepository.save(alert));
     }
 
+    /**
+     * GET NEXT ALERT: Fetches the most urgent OPEN alert and instantly locks it for the officer.
+     */
+    @Override
+    @Transactional
+    public AlertDetailDto claimNextAvailableAlert(Long officerId) {
+
+        // 1. Fetch the oldest open alert safely with a Pessimistic DB Lock
+        Alert oldestOpenAlert = alertRepository.findFirstByStatusOrderBySlaDeadlineAsc(AlertStatus.OPEN)
+                .orElseThrow(() -> new ResourceNotFoundException("The queue is completely empty. Great job!"));
+
+        // 2. Lock and Claim the alert for this specific officer
+        oldestOpenAlert.setStatus(AlertStatus.IN_REVIEW);
+        oldestOpenAlert.setAcknowledgedBy(officerId);
+        oldestOpenAlert.setAcknowledgedAt(Instant.now());
+
+        log.info("L1 Officer ID {} used 'Get Next' and was assigned Alert ID {}", officerId, oldestOpenAlert.getId());
+
+        // 3. Save and return the mapped DTO to the frontend
+        return alertMapper.toDto(alertRepository.save(oldestOpenAlert));
+    }
+
     @Override
     @Transactional
     public void dismissAlert(Long alertId, Long officerId, String reason) {

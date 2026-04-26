@@ -33,6 +33,22 @@ public class AlertController {
     }
 
     /**
+     * POST: Automatically assigns the oldest OPEN alert to the requesting L1 Officer.
+     * This enforces a strict FIFO (First-In, First-Out) queue and prevents cherry-picking.
+     */
+    @PostMapping("/assign-next")
+    public ResponseEntity<ApiResponse<AlertDetailDto>> claimNextAvailableAlert() {
+
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+
+        // If the queue is empty, the service throws ResourceNotFoundException,
+        // which your GlobalExceptionHandler will elegantly catch and return to the UI!
+        AlertDetailDto nextAlert = alertService.claimNextAvailableAlert(currentOfficerId);
+
+        return ResponseEntity.ok(ApiResponse.success("Alert successfully assigned from the queue.", nextAlert));
+    }
+
+    /**
      * POST: Dismiss an alert as a false positive.
      * Note: Using @RequestParam for the reason is perfect for simple string submissions.
      */
