@@ -1,12 +1,12 @@
 package com.onboardguard.candidate.dto.response;
 
 import com.onboardguard.candidate.enums.DocumentStatus;
-import com.onboardguard.candidate.enums.DocumentType;
+import com.onboardguard.candidate.enums.CandidateDocumentType;
 import java.time.Instant;
 
 public record DocumentResponseDto(
         Long id,
-        DocumentType documentType,
+        CandidateDocumentType candidateDocumentType,
         String originalFilename,
         Long fileSizeBytes,
         DocumentStatus status,

@@ -1,29 +1,32 @@
 package com.onboardguard.screening.dto;
 
 import lombok.Builder;
+import lombok.Getter;
 
 /**
  * Flat snapshot of a candidate's data passed to the screening engine.
  * Using a dedicated DTO means strategies never hold a reference to the
  * Candidate JPA entity, keeping them stateless and testable.
  */
+@Getter
 @Builder
-public record CandidateScreeningData (
-        Long   candidateId,
+public class CandidateScreeningData {
 
-        // Personal
-        String fullName,           // e.g. "Rohit S. Sharma"
-        String fullNameNormalized, // lowercase, trimmed, spaces-collapsed
-        String panNumber,          // uppercase, no spaces
-        String aadhaarNumber,      // digits only
-        String passportNumber,
+    private Long   candidateId;
 
-        // Professional
-        String organizationName,
-        String organizationNameNormalized,
-        String designation,
-        String designationNormalized,
+    // Personal
+    private String fullName;           // e.g. "Rohit S. Sharma"
+    private String fullNameNormalized; // lowercase, trimmed, spaces-collapsed
+    private String panNumber;          // uppercase, no spaces
+    private String aadhaarNumber;      // digits only
+    private String passportNumber;
 
-        // Type (Employee / Vendor / Contractor) — for future rule extensions
-        String candidateType
-) { }
+    // Professional
+    private String organizationName;
+    private String organizationNameNormalized;
+    private String designation;
+    private String designationNormalized;
+
+    // Type (Employee / Vendor / Contractor) — for future rule extensions
+    private String candidateType;
+}

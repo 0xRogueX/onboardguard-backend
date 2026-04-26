@@ -19,15 +19,23 @@ public class NameMatchingUtil {
 
     /**
      * Normalize a name for comparison:
-     * - lowercase
-     * - trim whitespace
-     * - collapse multiple spaces to one
-     * - remove punctuation EXCEPT dots (we need dots to identify initials)
+     * - Smartly separates unspaced initials (e.g., "RS" -> "R S")
+     * - lowercase & trim
+     * - converts dots to spaces (e.g., "R.S." -> "R S")
+     * - collapses multiple spaces to one
+     * - removes all punctuation
      */
     public String normalize(String name) {
         if (name == null) return "";
-        return name.toLowerCase()
+
+        // Handle unspaced capital initials (e.g., "RS Sharma" -> "R S Sharma")
+        // This Regex says: Find an Uppercase letter that is immediately followed by another Uppercase letter
+        String preProcessed = name.replaceAll("([A-Z])(?=[A-Z])", "$1 ");
+
+        return preProcessed.toLowerCase()
                 .trim()
+                // Convert dots to spaces so isExactMatch works for "A.B." -> "A. B. "
+                .replace(".", " ")
                 .replaceAll("\\s+", " ")
                 // remove everything except letters, digits, spaces, and dots
                 .replaceAll("[^a-z0-9 .]", "");
@@ -130,7 +138,7 @@ public class NameMatchingUtil {
 
         // 1. Exact match
         if (normCandidate.equals(normWatchlist)) {
-            return NameMatchResult.exact();
+            return NameMatchResult.exactMatch();
         }
 
         // 2. Initials expansion
@@ -216,13 +224,17 @@ public class NameMatchingUtil {
     /**
      * Immutable result of an advanced name comparison.
      */
-    public record NameMatchResult(boolean matched, boolean exact, double similarity) {
+    public record NameMatchResult(
+            boolean matched,
+            boolean exact,
+            double similarity
+    ) {
 
         public static NameMatchResult noMatch() {
             return new NameMatchResult(false, false, 0.0);
         }
 
-        public static NameMatchResult exact() {
+        public static NameMatchResult exactMatch() {
             return new NameMatchResult(true, true, 1.0);
         }
 

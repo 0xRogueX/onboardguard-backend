@@ -3,36 +3,39 @@ package com.onboardguard.screening.dto;
 import com.onboardguard.screening.enums.CorroborationLevel;
 import com.onboardguard.screening.enums.MatchType;
 import lombok.Builder;
+import lombok.Getter;
 
 /**
  * Represents one individual match found during screening.
  * Collected by strategies and returned inside ScreeningResultDto.
  */
+@Getter
 @Builder
-public record MatchDetailDto (
-        Long   watchlistEntryId,
-        String watchlistPrimaryName,
-        String watchlistCategory,
-        String watchlistSeverity,
-        String watchlistSourceName,
-        Double watchlistSourceCredibility,
+public class MatchDetailDto {
 
-        // What type of match was found
-        MatchType matchType,
+    private Long   watchlistEntryId;
+    private String watchlistPrimaryName;
+    private String watchlistCategory;
+    private String watchlistSeverity;
+    private String watchlistSourceName;
+    private Double watchlistSourceCredibility;
 
-        // The actual values compared
-        String candidateFieldValue,
-        String watchlistFieldValue,
+    // What type of match was found
+    private MatchType matchType;
 
-        // Similarity score — null for exact matches
-        Double similarityScore,
+    // The actual values compared
+    private String candidateFieldValue;
+    private String watchlistFieldValue;
 
-        // Score breakdown
-        Double basePoints,
-        Double sourceCredibilityWeight,
-        Double corroborationMultiplier,
-        Double categoryBonus,
-        Double scoreContribution,
+    // Similarity score — null for exact matches
+    private Double similarityScore;
 
-        CorroborationLevel corroborationLevel
-) { }
+    // Score breakdown
+    private Double basePoints;
+    private Double sourceCredibilityWeight;
+    private Double corroborationMultiplier;
+    private Double categoryBonus;
+    private Double scoreContribution;
+
+    private CorroborationLevel corroborationLevel;
+}

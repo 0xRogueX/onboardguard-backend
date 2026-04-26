@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -142,7 +141,6 @@ public class GlobalExceptionHandler {
                                 .body(errorResponse);
         }
 
-        // Add to GlobalExceptionHandler.java:
         @ExceptionHandler(CloudStorageException.class)
         public ResponseEntity<ErrorResponse> handleCloudStorageException(CloudStorageException ex,
                         HttpServletRequest request) {

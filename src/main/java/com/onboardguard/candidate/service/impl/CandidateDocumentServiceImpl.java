@@ -3,8 +3,8 @@ package com.onboardguard.candidate.service.impl;
 import com.onboardguard.candidate.dto.response.DocumentResponseDto;
 import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.entity.CandidateDocument;
+import com.onboardguard.candidate.enums.CandidateDocumentType;
 import com.onboardguard.candidate.enums.DocumentStatus;
-import com.onboardguard.candidate.enums.DocumentType;
 import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.mapper.CandidateMapper;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
@@ -35,7 +35,7 @@ public class CandidateDocumentServiceImpl {
     private final com.onboardguard.shared.security.SecurityUtils securityUtils;
 
     @Transactional
-    public DocumentResponseDto uploadDocument(MultipartFile file, DocumentType documentType) {
+    public DocumentResponseDto uploadDocument(MultipartFile file, CandidateDocumentType candidateDocumentType) {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate profile not found."));
@@ -45,14 +45,14 @@ public class CandidateDocumentServiceImpl {
             throw new BadRequestException("Onboarding is completed. No further documents can be uploaded.");
         }
 
-        Optional<CandidateDocument> existingDocOpt = documentRepository.findByCandidateIdAndDocumentType(candidate.getId(), documentType);
+        Optional<CandidateDocument> existingDocOpt = documentRepository.findByCandidateIdAndDocumentType(candidate.getId(), candidateDocumentType);
         CandidateDocument document;
 
         if (existingDocOpt.isPresent()) {
             document = existingDocOpt.get();
 
             if (document.getStatus() != DocumentStatus.REJECTED) {
-                throw new BadRequestException("Document of type " + documentType + " already exists and is currently " + document.getStatus());
+                throw new BadRequestException("Document of type " + candidateDocumentType + " already exists and is currently " + document.getStatus());
             }
 
             if (cloudStorageService.exists(document.getCloudStorageKey())) {
@@ -68,14 +68,14 @@ public class CandidateDocumentServiceImpl {
             if (candidate.getFormSubmittedAt() != null) {
                 throw new BadRequestException("Profile is submitted. You can only re-upload rejected documents.");
             }
-            document = candidateMapper.initDocument(candidate, documentType, Instant.now());
+            document = candidateMapper.initDocument(candidate, candidateDocumentType, Instant.now());
         }
 
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
         String safeExtension = (extension != null && !extension.isBlank()) ? "." + extension : "";
         String storageKey = String.format("candidates/%d/%s/%s%s",
                 candidate.getId(),
-                documentType.name(),
+                candidateDocumentType.name(),
                 UUID.randomUUID().toString(),
                 safeExtension);
 

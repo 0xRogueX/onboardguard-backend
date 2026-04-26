@@ -1,33 +1,33 @@
 package com.onboardguard.watchlist.entity;
 
 import com.onboardguard.shared.common.entity.BaseEntity;
-import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SourceType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "watchlist_categories")
+@Table(name = "watchlist_sources")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class WatchlistCategory extends BaseEntity {
+public class WatchlistSource extends BaseEntity {
+
+    @Column(nullable = false, unique = true)
+    private String code; // SEBI_DEBARRED, RBI_DEFAULTER
+
+    @Column(nullable = false)
+    private String name; // SEBI Debarred List
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
-    private CategoryCode code;
+    @Column(nullable = false)
+    private SourceType type;
 
     @Column(nullable = false)
-    private String name; // Fraud, Criminal, etc.
+    private Double credibilityWeight; // 1.0, 0.8, etc.
 
-    @Column(nullable = false)
-    private Integer baseRiskScore; // 50, 70, 90
-
-    private String description;
-
-    @Column(nullable = false)
     @Builder.Default
-    private Boolean isActive = true;
+    private Boolean active = true;
 }

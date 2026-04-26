@@ -9,8 +9,7 @@ import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.entity.CandidateDocument;
 import com.onboardguard.candidate.entity.CandidatePersonalDetail;
 import com.onboardguard.candidate.entity.CandidateProfessionalDetail;
-import com.onboardguard.candidate.enums.DocumentStatus;
-import com.onboardguard.candidate.enums.DocumentType;
+import com.onboardguard.candidate.enums.CandidateDocumentType;
 import org.mapstruct.*;
 
 import java.time.Instant;
@@ -53,10 +52,10 @@ public interface CandidateMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "candidate", source = "candidate")
-    @Mapping(target = "documentType", source = "documentType")
+    @Mapping(target = "candidateDocumentType", source = "candidateDocumentType")
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "uploadedAt", source = "uploadedAt")
-    CandidateDocument initDocument(Candidate candidate, DocumentType documentType, Instant uploadedAt);
+    CandidateDocument initDocument(Candidate candidate, CandidateDocumentType candidateDocumentType, Instant uploadedAt);
 
     // Map Document Entity to Response DTO with presigned URL
     @Mapping(target = "fileUrl", source = "presignedUrl")

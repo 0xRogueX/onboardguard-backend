@@ -3,6 +3,7 @@ package com.onboardguard.screening.dto;
 import com.onboardguard.screening.enums.RiskLevel;
 import com.onboardguard.screening.enums.ScreeningStatus;
 import lombok.Builder;
+import lombok.Getter;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,21 +13,23 @@ import java.util.List;
  * Returned from the strategy, persisted by ScreeningOrchestrationService,
  * and also returned to the caller (e.g. controller, event listener).
  */
+@Getter
 @Builder
-public record ScreeningResultDto (
-        Long   screeningResultId,
-        Long   candidateId,
-        String strategyUsed,
+public class ScreeningResultDto {
 
-        Double riskScore,
-        RiskLevel riskLevel,
-        ScreeningStatus status,
+    private Long   screeningResultId;
+    private Long   candidateId;
+    private String strategyUsed;
 
-        List<MatchDetailDto> matches,
+    private Double riskScore;
+    private RiskLevel riskLevel;
+    private ScreeningStatus status;
 
-        // How many entries were checked across all watchlist categories
-        int totalEntriesChecked,
+    private List<MatchDetailDto> matches;
 
-        Instant screeningStartedAt,
-        Instant screeningCompletedAt
-) { }
+    // How many entries were checked across all watchlist categories
+    private int totalEntriesChecked;
+
+    private Instant screeningStartedAt;
+    private Instant screeningCompletedAt;
+}

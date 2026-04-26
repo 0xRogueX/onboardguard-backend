@@ -1,7 +1,7 @@
 package com.onboardguard.candidate.entity;
 
+import com.onboardguard.candidate.enums.CandidateDocumentType;
 import com.onboardguard.candidate.enums.DocumentStatus;
-import com.onboardguard.candidate.enums.DocumentType;
 import com.onboardguard.shared.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,7 +23,7 @@ public class CandidateDocument extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private DocumentType documentType;
+    private CandidateDocumentType candidateDocumentType;
 
     @Column(nullable = false)
     private String cloudStorageKey;
