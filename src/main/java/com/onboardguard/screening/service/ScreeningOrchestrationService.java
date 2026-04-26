@@ -54,7 +54,7 @@ public class ScreeningOrchestrationService {
 
     private final ScreeningMapper           screeningMapper;
 
-    // ── Primary entry point ───────────────────────────────────────────────────
+    // Primary entry point
 
     @Transactional
     public ScreeningResultDto runScreening(Long candidateId) {
@@ -126,8 +126,7 @@ public class ScreeningOrchestrationService {
         }
     }
 
-    // ── Dynamic DI ────────────────────────────────────────────────────────────
-
+    // Dynamic DI
     private ScreeningStrategy resolveActiveStrategy() {
         String configured = systemConfigService.getString(KEY_ACTIVE_STRATEGY);
         if (configured == null) configured = "basic";
@@ -140,8 +139,7 @@ public class ScreeningOrchestrationService {
         return strategy;
     }
 
-    // ── Persistence helpers ───────────────────────────────────────────────────
-
+    // Persistence helpers
     private ScreeningResult createPendingResult(Candidate candidate, String strategyName) {
         return screeningResultRepository.save(
                 ScreeningResult.builder()

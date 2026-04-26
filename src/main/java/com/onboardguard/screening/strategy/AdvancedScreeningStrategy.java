@@ -12,7 +12,6 @@ import com.onboardguard.watchlist.entity.WatchlistEntry;
 import com.onboardguard.watchlist.repository.WatchlistEntryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -23,10 +22,10 @@ import java.util.Optional;
 
 /**
  * Advanced screening with four layers:
- *   Layer 1 — Initials expansion   ("R.S. Sharma" matches "Rohit S. Sharma")
- *   Layer 2 — Fuzzy matching       ("Rohit Shrma" matches "Rohit Sharma")
- *   Layer 3 — Alias lookup         ("Ravi Kapoor" matches because it is an alias)
- *   Layer 4 — Multi-field corroboration (score multipliers based on ID matches)
+ *   Layer 1 - Initials expansion   ("R.S. Sharma" matches "Rohit S. Sharma")
+ *   Layer 2 - Fuzzy matching       ("Rohit Shrma" matches "Rohit Sharma")
+ *   Layer 3 - Alias lookup         ("Ravi Kapoor" matches because it is an alias)
+ *   Layer 4 - Multi-field corroboration (score multipliers based on ID matches)
  *
  * The fuzzy threshold is loaded from config so admin can change it at runtime.
  */
@@ -39,8 +38,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
     private final RiskScoringEngine riskScoringEngine;
     private final NameMatchingUtil nameMatchingUtil;
 
-    // fuzzy threshold is read dynamically from riskScoringEngine
-
     @Override
     public String strategyName() {
         return "ADVANCED";
@@ -52,7 +49,7 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
         log.info("[ADVANCED] Starting screening for candidateId={}", candidate.getCandidateId());
 
         List<WatchlistEntry> activeEntries = watchlistEntryRepository
-                .findAllActiveOnDateWithAliases(LocalDate.now()); // JOIN FETCH aliases
+                .findAllActiveOnDateWithAliases(LocalDate.now());
         log.info("[ADVANCED] Checking against {} active watchlist entries", activeEntries.size());
 
         List<MatchDetailDto> allMatches = new ArrayList<>();
@@ -85,18 +82,17 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                 .build();
     }
 
-    // ── Per-entry advanced checks ─────────────────────────────────────────────
-
+    // Per-entry advanced checks
     private List<MatchDetailDto> checkEntryAdvanced(CandidateScreeningData c, WatchlistEntry entry) {
         List<MatchDetailDto> matches = new ArrayList<>();
 
-        // ── LAYER 1 + 2: Name match against primary name ──────────────────────
+        // LAYER 1 + 2: Name match against primary name
         Optional<MatchDetailDto> nameMatch = checkNameMatch(
                 c, entry, c.getFullName(), entry.getPrimaryName(), false);
         nameMatch.ifPresent(matches::add);
 
-        // ── LAYER 3: Alias lookup (only if name didn't already match) ─────────
-        // If name already matched the primary name, aliases won't add score —
+        // LAYER 3: Alias lookup (only if name didn't already match)
+        // If name already matched the primary name, aliases won't add score
         // same entry, same candidate, just a different comparison path.
         if (nameMatch.isEmpty()) {
             for (WatchlistAlias alias : entry.getAliases()) {
@@ -109,7 +105,7 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
             }
         }
 
-        // ── LAYER 4 corroborating fields ──────────────────────────────────────
+        // LAYER 4 corroborating fields
         // These are only added if there is also a name (or alias) match,
         // because standalone ID matches without a name match are low value.
         boolean hasNameMatch = !matches.isEmpty();
@@ -118,17 +114,29 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
             // PAN
             if (isNotBlank(c.getPanNumber()) && isNotBlank(entry.getPanNumber())
                     && c.getPanNumber().equalsIgnoreCase(entry.getPanNumber())) {
-                matches.add(buildCorroboratingMatch(c, entry,
-                        MatchType.PAN_EXACT,
-                        c.getPanNumber(), entry.getPanNumber(), null, 35.0));
+                matches.add(
+                        buildCorroboratingMatch(c,
+                                entry,
+                                MatchType.PAN_EXACT,
+                                c.getPanNumber(),
+                                entry.getPanNumber(),
+                                null,
+                                35.0)
+                );
             }
 
             // Aadhaar
             if (isNotBlank(c.getAadhaarNumber()) && isNotBlank(entry.getAadhaarNumber())
                     && c.getAadhaarNumber().equals(entry.getAadhaarNumber())) {
-                matches.add(buildCorroboratingMatch(c, entry,
-                        MatchType.AADHAAR_EXACT,
-                        c.getAadhaarNumber(), entry.getAadhaarNumber(), null, 30.0));
+                matches.add(
+                        buildCorroboratingMatch(c,
+                                entry,
+                                MatchType.AADHAAR_EXACT,
+                                c.getAadhaarNumber(),
+                                entry.getAadhaarNumber(),
+                                null,
+                                30.0)
+                );
             }
 
             // Organization — fuzzy allowed here too
@@ -138,19 +146,30 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                         c.getOrganizationName(), entry.getOrganizationName(), riskScoringEngine.getFuzzyThreshold());
                 if (orgResult.matched()) {
                     MatchType orgType = orgResult.exact() ? MatchType.ORG_EXACT : MatchType.ORG_FUZZY;
-                    matches.add(buildCorroboratingMatch(c, entry,
-                            orgType,
-                            c.getOrganizationName(), entry.getOrganizationName(),
-                            orgResult.similarity(), 20.0));
+                    matches.add(
+                            buildCorroboratingMatch(c,
+                                    entry,
+                                    orgType,
+                                    c.getOrganizationName(), 
+                                    entry.getOrganizationName(),
+                                    orgResult.similarity(),
+                                    20.0)
+                    );
                 }
             }
 
             // Designation — exact only (too short for reliable fuzzy)
             if (isNotBlank(c.getDesignation()) && isNotBlank(entry.getDesignation())
                     && c.getDesignation().equalsIgnoreCase(entry.getDesignation())) {
-                matches.add(buildCorroboratingMatch(c, entry,
-                        MatchType.DESIGNATION_EXACT,
-                        c.getDesignation(), entry.getDesignation(), null, 15.0));
+                matches.add(
+                        buildCorroboratingMatch(c,
+                                entry,
+                                MatchType.DESIGNATION_EXACT,
+                                c.getDesignation(),
+                                entry.getDesignation(),
+                                null,
+                                15.0)
+                );
             }
         }
 
@@ -164,8 +183,7 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
         return matches;
     }
 
-    // ── Name match helper (primary name or alias) ────────────────────────────
-
+    // Name match helper (primary name or alias)
     private Optional<MatchDetailDto> checkNameMatch(
             CandidateScreeningData c,
             WatchlistEntry entry,
