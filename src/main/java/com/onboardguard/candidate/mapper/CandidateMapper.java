@@ -46,6 +46,9 @@ public interface CandidateMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "candidate", source = "candidate")
     @Mapping(target = "fullNameNormalized", ignore = true) // handled in service
+    @Mapping(target = "panNumber", source = "dto.panNumber")
+    @Mapping(target = "adhaarNumber", source = "dto.adhaarNumber")
+    @Mapping(target = "passportNumber", source = "dto.passportNumber")
     CandidatePersonalDetail toPersonalDetailEntity(PersonalDetailsRequestDto dto, Candidate candidate);
 
     @Mapping(target = "id", ignore = true)
