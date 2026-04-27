@@ -20,15 +20,11 @@ import java.util.List;
 public class ScreeningController {
 
     private final ScreeningOrchestrationService orchestrationService;
-    private final ScreeningResultRepository     screeningResultRepository;
-    private final ScreeningMatchRepository      screeningMatchRepository;
-    private final ScreeningMapper               screeningMapper;
+    private final ScreeningResultRepository screeningResultRepository;
+    private final ScreeningMatchRepository screeningMatchRepository;
+    private final ScreeningMapper screeningMapper;
 
-    /**
-     * Admin manually re-screens a candidate.
-     * Normal screenings fire automatically after form submission - not via this endpoint.
-     * Returns a summary DTO (no match list — use /results/{id}/matches for detail).
-     */
+    // ADMIN ONLY (explicit permission)
     @PostMapping("/candidates/{candidateId}/re-screen")
     public ResponseEntity<ScreeningResultDto> reScreen(@PathVariable Long candidateId) {
         ScreeningResultDto result = orchestrationService.runScreening(candidateId);
@@ -39,8 +35,9 @@ public class ScreeningController {
      * Full screening history for a candidate — summary DTOs, no match detail.
      * Prevents N+1: matches lazy collection is NOT loaded for list responses.
      */
+    // Officers + Admin (view screening history)
     @GetMapping("/candidates/{candidateId}/results")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COMPLIANCE_OFFICER')")
+    @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public ResponseEntity<List<ScreeningResultDto>> getHistory(@PathVariable Long candidateId) {
         List<ScreeningResult> results =
                 screeningResultRepository.findByCandidateIdOrderByCreatedAtDesc(candidateId);
@@ -53,7 +50,8 @@ public class ScreeningController {
      * similarity scores, corroboration level, and score contributions.
      */
     @GetMapping("/results/{resultId}/matches")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COMPLIANCE_OFFICER')")
+    // Officers + Admin (match investigation)
+    @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public ResponseEntity<List<MatchDetailDto>> getMatchDetails(@PathVariable Long resultId) {
         return ResponseEntity.ok(
                 screeningMapper.toMatchDetailDtos(
@@ -64,8 +62,9 @@ public class ScreeningController {
      * Latest screening result for a candidate — full DTO including matches.
      * Used in the officer's alert view to show the most recent screening outcome.
      */
+    // Officers + Admin (latest result view)
     @GetMapping("/candidates/{candidateId}/latest")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COMPLIANCE_OFFICER')")
+    @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public ResponseEntity<ScreeningResultDto> getLatest(@PathVariable Long candidateId) {
         return screeningResultRepository
                 .findTopByCandidateIdOrderByCreatedAtDesc(candidateId)
