@@ -30,7 +30,6 @@ public class ScreeningController {
      * Returns a summary DTO (no match list — use /results/{id}/matches for detail).
      */
     @PostMapping("/candidates/{candidateId}/re-screen")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ScreeningResultDto> reScreen(@PathVariable Long candidateId) {
         ScreeningResultDto result = orchestrationService.runScreening(candidateId);
         return ResponseEntity.ok(result);

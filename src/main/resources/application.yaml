@@ -14,8 +14,14 @@ spring:
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
+  # SQL INITIALIZATION (Added for data.sql seeding)
+  sql:
+    init:
+      mode: always
+
   # JPA / HIBERNATE CONFIGURATION
   jpa:
+    defer-datasource-initialization: true # CRITICAL: Ensures data.sql runs AFTER Hibernate creates tables
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:}
     show-sql: true
