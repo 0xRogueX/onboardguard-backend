@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
-@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonIgnoreProperties(ignoreUnknown = true)
 public class CustomUserDetails implements UserDetails {
 
     private Long userId;
@@ -37,7 +37,7 @@ public class CustomUserDetails implements UserDetails {
     private boolean active;
     private boolean locked;
 
-    @JsonIgnore
+//    @JsonIgnore
     private String passwordHash;
 
     private Set<String> authorities;
@@ -70,7 +70,8 @@ public class CustomUserDetails implements UserDetails {
                 .collect(Collectors.toSet());
     }
 
-    @Override @JsonIgnore
+    @Override
+//    @JsonIgnore
     public String getPassword() {
         return passwordHash;
     }

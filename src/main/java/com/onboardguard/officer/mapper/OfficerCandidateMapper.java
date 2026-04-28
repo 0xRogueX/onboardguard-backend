@@ -4,6 +4,7 @@ import com.onboardguard.candidate.dto.response.DocumentResponseDto;
 import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.entity.CandidatePersonalDetail;
 import com.onboardguard.candidate.entity.CandidateProfessionalDetail;
+import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -38,4 +39,11 @@ public interface OfficerCandidateMapper {
     // 4. Professional Info Mapping
     // No @Mapping needed! currentOrganization and totalExperienceYears match perfectly.
     CandidateVerificationDashboardDto.ProfessionalInfoDto toProfessionalInfoDto(CandidateProfessionalDetail detail);
+
+    // Translates the entity into a lightweight row for the UI Grid
+    @Mapping(source = "id", target = "candidateId")
+    @Mapping(source = "user.email", target = "email")
+    @Mapping(source = "personalDetail.firstName", target = "firstName")
+    @Mapping(source = "personalDetail.lastName", target = "lastName")
+    CandidateQueueItemDto toQueueItemDto(Candidate candidate);
 }

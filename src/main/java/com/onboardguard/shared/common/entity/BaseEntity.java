@@ -42,5 +42,6 @@ public abstract class BaseEntity {
     private String updatedBy;
 
     @Version
-    private Long version;
+    @Column(nullable = false)
+    private Long version = 0L;
 }

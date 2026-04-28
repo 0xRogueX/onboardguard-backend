@@ -1,6 +1,7 @@
 package com.onboardguard.officer.controller;
 
 import com.onboardguard.candidate.dto.response.DocumentResponseDto;
+import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.dto.RejectDocumentRequestDto;
 import com.onboardguard.officer.service.DocumentVerificationService;
@@ -24,6 +25,25 @@ public class DocumentVerificationController {
 
     private final DocumentVerificationService documentVerificationService;
     private final SecurityUtils securityUtils;
+
+    // ══════════════════════════════════════════════════════════════
+    // QUEUE VIEW ENDPOINT
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET: Returns the queue of all candidates waiting for document verification.
+     * Used to populate the Officer's "Pending Verifications" data grid.
+     */
+    @GetMapping("/candidates/pending")
+    public ResponseEntity<ApiResponse<List<CandidateQueueItemDto>>> getPendingCandidatesQueue() {
+
+        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue();
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Pending candidate queue retrieved successfully.",
+                queue
+        ));
+    }
 
     // ══════════════════════════════════════════════════════════════
     // 1. QUEUE & CLAIM ENDPOINTS

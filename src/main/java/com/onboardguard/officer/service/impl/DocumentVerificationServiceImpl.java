@@ -8,6 +8,7 @@ import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.service.impl.CandidateDocumentServiceImpl;
+import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.mapper.OfficerCandidateMapper;
 import com.onboardguard.officer.service.DocumentVerificationService;
@@ -36,6 +37,28 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     private final OfficerCandidateMapper officerCandidateMapper;         // MapStruct for the Dashboard DTO
     private final ApplicationEventPublisher eventPublisher;
     private final ScreeningOrchestrationService screeningOrchestrationService;
+
+    // ══════════════════════════════════════════════════════════════
+    // QUEUE VIEW (GRID)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET QUEUE: Returns a lightweight list of unlocked candidates for the Officer UI grid.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
+
+        // Fetch unlocked candidates who are waiting for document verification
+        List<Candidate> pendingCandidates = candidateRepository
+                .findAvailableCandidatesForVerification(OnboardingStatus.DOCUMENTS_UPLOADED);
+
+        // Map to lightweight DTOs for the frontend
+        return pendingCandidates.stream()
+                .map(officerCandidateMapper::toQueueItemDto)
+                .toList();
+    }
+
 
     // ══════════════════════════════════════════════════════════════
     // 1. QUEUE & CLAIM LOGIC
