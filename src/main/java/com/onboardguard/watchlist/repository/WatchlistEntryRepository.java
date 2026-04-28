@@ -1,7 +1,6 @@
 package com.onboardguard.watchlist.repository;
 
 import com.onboardguard.watchlist.entity.WatchlistEntry;
-import org.hibernate.sql.exec.spi.JdbcCallParameterRegistration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

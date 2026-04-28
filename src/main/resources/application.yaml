@@ -25,7 +25,7 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:}
     show-sql: true
-#    open-in-view: false # Optimized for performance
+    open-in-view: false # Optimized for performance
     properties:
       hibernate:
         format_sql: true
@@ -77,12 +77,6 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:900000}  # 15 minutes in milliseconds
 
 app:
-
-  password-reset:
-    expiry-minutes: 30
-    rate-limit:
-      max-login-attempts: 10
-      window-seconds: 60
 
   storage:
     cloudinary:
