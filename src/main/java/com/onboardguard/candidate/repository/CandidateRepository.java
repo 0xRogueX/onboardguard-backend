@@ -2,7 +2,12 @@ package com.onboardguard.candidate.repository;
 
 import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.enums.OnboardingStatus;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.QueryHints;
+
 import java.util.Optional;
 
 public interface CandidateRepository extends JpaRepository<Candidate, Long> {
@@ -10,4 +15,15 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     Optional<Candidate> findByUserId(Long userId);
 
     Long countByOnboardingStatus(OnboardingStatus onboardingStatus);
+
+    /**
+     * GET NEXT CANDIDATE (FIFO Queue with SKIP LOCKED):
+     * Finds the oldest candidate waiting for document verification that is not currently locked.
+     * * @Lock(PESSIMISTIC_WRITE) issues a SELECT ... FOR UPDATE.
+     * @QueryHints(timeout = "-2") instructs Hibernate to append SKIP LOCKED.
+     * This ensures multiple officers can pull from the queue simultaneously without database blocking.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
+    Optional<Candidate> findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus status);
 }

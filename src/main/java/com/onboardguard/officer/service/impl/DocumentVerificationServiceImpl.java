@@ -5,16 +5,17 @@ import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.entity.CandidateDocument;
 import com.onboardguard.candidate.enums.DocumentStatus;
 import com.onboardguard.candidate.enums.OnboardingStatus;
-import com.onboardguard.candidate.mapper.CandidateMapper;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.service.impl.CandidateDocumentServiceImpl;
+import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
+import com.onboardguard.officer.mapper.OfficerCandidateMapper;
 import com.onboardguard.officer.service.DocumentVerificationService;
+import com.onboardguard.screening.service.ScreeningOrchestrationService;
 import com.onboardguard.shared.common.events.DocumentRejectedEvent;
 import com.onboardguard.shared.common.events.DocumentVerificationCompletedEvent;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
-import com.onboardguard.shared.storage.CloudStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,30 +32,76 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     private final CandidateDocumentRepository documentRepository;
     private final CandidateRepository candidateRepository;
-    private final CandidateDocumentServiceImpl candidateDocumentService;
-    private final CloudStorageService cloudStorageService;
-    private final CandidateMapper candidateMapper;
+    private final CandidateDocumentServiceImpl candidateDocumentService; // For S3 presigned URLs
+    private final OfficerCandidateMapper officerCandidateMapper;         // MapStruct for the Dashboard DTO
     private final ApplicationEventPublisher eventPublisher;
+    private final ScreeningOrchestrationService screeningOrchestrationService;
+
+    // ══════════════════════════════════════════════════════════════
+    // 1. QUEUE & CLAIM LOGIC
+    // ══════════════════════════════════════════════════════════════
 
     /**
-     * Officer pulls all documents for a specific candidate to review them side-by-side.
+     * MANUAL PULL: Officer clicks a specific candidate in the grid to lock and claim them.
      */
     @Override
-    @Transactional(readOnly = true)
-    public List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId) {
-        return documentRepository.findByCandidateId(candidateId)
-                .stream()
-                .map(candidateDocumentService::mapToResponseWithUrl)
-                .toList();
+    @Transactional
+    public void claimCandidateForVerification(Long candidateId, Long officerId) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+
+        if (candidate.getVerificationLockedBy() != null && !candidate.getVerificationLockedBy().equals(officerId)) {
+            throw new IllegalStateException("This candidate is already being reviewed by another officer.");
+        }
+
+        lockCandidate(candidate, officerId);
     }
 
     /**
-     * Officer approves a specific document.
+     * AUTO PUSH (FIFO): Automatically finds the oldest unlocked candidate, locks it, and returns the dashboard.
      */
+    @Override
+    @Transactional
+    public CandidateVerificationDashboardDto claimNextAvailableCandidate(Long officerId) {
+        Candidate nextCandidate = candidateRepository
+                .findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus.DOCUMENTS_UPLOADED)
+                .orElseThrow(() -> new ResourceNotFoundException("No candidates currently waiting for verification!"));
+
+        lockCandidate(nextCandidate, officerId);
+
+        return getCandidateVerificationDetails(nextCandidate.getId());
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 2. DASHBOARD VIEW (MAPSTRUCT)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Fetches the candidate profile AND documents into a single JSON payload.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CandidateVerificationDashboardDto getCandidateVerificationDetails(Long candidateId) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with ID: " + candidateId));
+
+        List<DocumentResponseDto> documents = documentRepository.findByCandidateId(candidateId)
+                .stream()
+                .map(candidateDocumentService::mapToResponseWithUrl)
+                .toList();
+
+        return officerCandidateMapper.toDashboardDto(candidate, documents);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 3. DOCUMENT VERIFICATION LOGIC
+    // ══════════════════════════════════════════════════════════════
+
     @Override
     @Transactional
     public void approveDocument(Long documentId, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
+        validateLockOwnership(document.getCandidate(), officerId);
 
         if (document.getStatus() == DocumentStatus.VERIFIED) {
             throw new BadRequestException("Document is already verified.");
@@ -68,19 +115,14 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         documentRepository.save(document);
         log.info("Document ID {} VERIFIED by Officer ID {}", documentId, officerId);
 
-        // Optional: Check if ALL documents for this candidate are now verified.
-        // If yes, trigger the Screening Engine!
         checkAndAdvanceCandidateStatus(document.getCandidate().getId());
     }
 
-    /**
-     * Officer rejects a document. This locks the candidate's screening process
-     * and fires an event to email the candidate for re-upload.
-     */
     @Override
     @Transactional
     public void rejectDocument(Long documentId, String reason, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
+        validateLockOwnership(document.getCandidate(), officerId);
 
         if (document.getStatus() == DocumentStatus.VERIFIED) {
             throw new BadRequestException("Cannot reject a document that has already been verified.");
@@ -90,20 +132,21 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         document.setRejectionReason(reason);
         document.setVerifiedBy(officerId);
         document.setVerifiedAt(Instant.now());
-
         documentRepository.save(document);
 
         Candidate candidate = document.getCandidate();
 
-        // Change candidate status so they know action is required
+        // Lock candidate status and unlock the profile (so it's not stuck with the officer)
         candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_REJECTED);
+        candidate.setVerificationLockedBy(null);
+        candidate.setVerificationLockedAt(null);
         candidateRepository.save(candidate);
 
         log.info("Document ID {} REJECTED by Officer ID {}. Reason: {}", documentId, officerId, reason);
 
-        // Fire the event! Your notification service will listen to this and send an email.
+        // Fire event to email the candidate
         DocumentRejectedEvent event = new DocumentRejectedEvent(
-                candidate.getUser().getEmail(), // Assuming Candidate has a mapping to User
+                candidate.getUser().getEmail(),
                 candidate.getPersonalDetail().getFirstName() + " " + candidate.getPersonalDetail().getLastName(),
                 document.getCandidateDocumentType().name(),
                 reason
@@ -114,6 +157,20 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     // ══════════════════════════════════════════════════════════════
     // PRIVATE HELPER METHODS
     // ══════════════════════════════════════════════════════════════
+
+    private void lockCandidate(Candidate candidate, Long officerId) {
+        candidate.setVerificationLockedBy(officerId);
+        candidate.setVerificationLockedAt(Instant.now());
+        candidateRepository.save(candidate);
+
+        log.info("Candidate ID {} locked by Officer ID {}", candidate.getId(), officerId);
+    }
+
+    private void validateLockOwnership(Candidate candidate, Long officerId) {
+        if (!officerId.equals(candidate.getVerificationLockedBy())) {
+            throw new IllegalStateException("You cannot modify documents for a candidate you have not locked/claimed.");
+        }
+    }
 
     private CandidateDocument getDocumentById(Long documentId) {
         return documentRepository.findById(documentId)
@@ -128,8 +185,17 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         if (allVerified) {
             Candidate candidate = candidateRepository.findById(candidateId).orElseThrow();
             candidate.setOnboardingStatus(OnboardingStatus.SCREENING_PENDING);
+
+            // Release the lock, the officer is done!
+            candidate.setVerificationLockedBy(null);
+            candidate.setVerificationLockedAt(null);
             candidateRepository.save(candidate);
+
             log.info("Candidate ID {} has all documents verified. Ready for Screening Engine.", candidateId);
+
+            // Trigger the Screening Engine!
+
+            screeningOrchestrationService.runScreening(candidateId);
 
             eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
 

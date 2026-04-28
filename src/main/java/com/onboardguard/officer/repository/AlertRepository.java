@@ -3,10 +3,8 @@ package com.onboardguard.officer.repository;
 import com.onboardguard.officer.entity.Alert;
 import com.onboardguard.shared.common.enums.AlertStatus;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -18,11 +16,14 @@ import java.util.Optional;
 public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     /**
-     * Finds the most urgent OPEN alert based on SLA deadline.
-     * @Lock(LockModeType.PESSIMISTIC_WRITE) forces the database to lock this row.
-     * If another officer queries at the exact same time, they must wait or grab the NEXT row.
+     * PULL QUEUE: Finds the oldest OPEN alert based on SLA deadline.
+     * * @Lock(PESSIMISTIC_WRITE) issues a SELECT ... FOR UPDATE.
+     * @QueryHints(timeout = "-2") instructs Hibernate to append SKIP LOCKED.
+     * * This guarantees high-throughput concurrency: If Officer A locks the first row,
+     * Officer B's query will instantly bypass it and grab the second row without blocking.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     Optional<Alert> findFirstByStatusOrderBySlaDeadlineAsc(AlertStatus status);
 
     /**
