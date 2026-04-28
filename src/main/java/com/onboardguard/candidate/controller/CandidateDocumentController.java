@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/candidates/profile/documents")
-@PreAuthorize("hasRole('CANDIDATE')")
 @RequiredArgsConstructor
 public class CandidateDocumentController {
 

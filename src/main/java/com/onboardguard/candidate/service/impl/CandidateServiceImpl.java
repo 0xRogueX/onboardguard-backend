@@ -14,7 +14,9 @@ import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.service.CandidateService;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
+import com.onboardguard.shared.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +30,7 @@ public class CandidateServiceImpl implements CandidateService {
     private final CandidateRepository candidateRepository;
     private final AppUserRepository userRepository;
     private final CandidateMapper candidateMapper;
-    private final com.onboardguard.shared.security.SecurityUtils securityUtils;
+    private final SecurityUtils securityUtils;
 
     private Candidate getOrCreateCandidate() {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
@@ -56,6 +58,7 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('CANDIDATE_FORM_SUBMIT')")
     public void savePersonalDetails(PersonalDetailsRequestDto dto) {
         Candidate candidate = getOrCreateCandidate();
         ensureProfileNotSubmitted(candidate);
@@ -87,6 +90,7 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('CANDIDATE_FORM_SUBMIT')")
     public void saveProfessionalDetails(ProfessionalDetailsRequestDto dto) {
         Candidate candidate = getOrCreateCandidate();
         ensureProfileNotSubmitted(candidate);
@@ -105,6 +109,7 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('CANDIDATE_FORM_SUBMIT')")
     public void submitProfile() {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
@@ -123,6 +128,7 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('CANDIDATE_STATUS_VIEW_OWN')")
     public CandidateStatusResponseDto getStatus() {
         Candidate candidate = getOrCreateCandidate();
         return candidateMapper.toStatusDto(candidate);

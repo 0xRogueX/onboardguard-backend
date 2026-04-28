@@ -11,8 +11,10 @@ import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
+import com.onboardguard.shared.security.SecurityUtils;
 import com.onboardguard.shared.storage.CloudStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,9 +34,10 @@ public class CandidateDocumentServiceImpl {
     private final CandidateDocumentRepository documentRepository;
     private final CloudStorageService cloudStorageService;
     private final CandidateMapper candidateMapper;
-    private final com.onboardguard.shared.security.SecurityUtils securityUtils;
+    private final SecurityUtils securityUtils;
 
     @Transactional
+    @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
     public DocumentResponseDto uploadDocument(MultipartFile file, CandidateDocumentType candidateDocumentType) {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
@@ -45,18 +48,23 @@ public class CandidateDocumentServiceImpl {
             throw new BadRequestException("Onboarding is completed. No further documents can be uploaded.");
         }
 
-        Optional<CandidateDocument> existingDocOpt = documentRepository.findByCandidateIdAndCandidateDocumentType(candidate.getId(), candidateDocumentType);
+        Optional<CandidateDocument> existingDocOpt =
+                documentRepository.findByCandidateIdAndCandidateDocumentType(candidate.getId(), candidateDocumentType);
+
         CandidateDocument document;
 
         if (existingDocOpt.isPresent()) {
             document = existingDocOpt.get();
 
             if (document.getStatus() != DocumentStatus.REJECTED) {
-                throw new BadRequestException("Document of type " + candidateDocumentType + " already exists and is currently " + document.getStatus());
+                throw new BadRequestException(
+                        "Document of type " + candidateDocumentType + " already exists and is currently " + document.getStatus()
+                );
             }
 
-            if (cloudStorageService.exists(document.getCloudStorageKey())) {
-                cloudStorageService.delete(document.getCloudStorageKey());
+            if (document.getCloudStorageKey() != null && document.getMimeType() != null
+                    && cloudStorageService.exists(document.getCloudStorageKey(), document.getMimeType())) {
+                cloudStorageService.delete(document.getCloudStorageKey(), document.getMimeType());
             }
 
             document.setStatus(DocumentStatus.PENDING);
@@ -73,10 +81,13 @@ public class CandidateDocumentServiceImpl {
 
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
         String safeExtension = (extension != null && !extension.isBlank()) ? "." + extension : "";
+
+        // Cloudinary visible structure:
+        // candidates/{candidateId}/{docType}/{uuid}.{ext}
         String storageKey = String.format("candidates/%d/%s/%s%s",
                 candidate.getId(),
                 candidateDocumentType.name(),
-                UUID.randomUUID().toString(),
+                UUID.randomUUID(),
                 safeExtension);
 
         String actualKey = cloudStorageService.upload(storageKey, file);
@@ -97,6 +108,7 @@ public class CandidateDocumentServiceImpl {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
     public List<DocumentResponseDto> getCandidateDocuments() {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
@@ -111,7 +123,8 @@ public class CandidateDocumentServiceImpl {
     public DocumentResponseDto mapToResponseWithUrl(CandidateDocument document) {
         String presignedUrl = cloudStorageService.generatePresignedUrl(
                 document.getCloudStorageKey(),
-                Duration.ofMinutes(15)
+                Duration.ofMinutes(15),
+                document.getMimeType()
         );
         return candidateMapper.toDocumentDto(document, presignedUrl);
     }

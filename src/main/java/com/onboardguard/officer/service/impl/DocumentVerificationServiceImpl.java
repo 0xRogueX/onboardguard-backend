@@ -132,7 +132,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
             log.info("Candidate ID {} has all documents verified. Ready for Screening Engine.", candidateId);
 
             eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
-
+//runScreening will be triggered by a listener in your Screening Orchestration Service, which will then kick off the screening process for this candidate.
         }
     }
 }
