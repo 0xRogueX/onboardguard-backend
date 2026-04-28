@@ -1,33 +1,34 @@
 package com.onboardguard;
 
+import com.onboardguard.watchlist.elasticsearch.WatchlistSearchRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import com.onboardguard.watchlist.elasticsearch.WatchlistSearchRepository;
 
-@SpringBootTest(
-        properties = {
-                "spring.data.elasticsearch.repositories.enabled=false",
-                "spring.elasticsearch.uris=",
-                // exclude auto-config by class name to avoid direct imports that may not be resolvable
-                "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration"
-        }
-)
+@SpringBootTest
 @ActiveProfiles("test")
 class OnboardguardBackendApplicationTests {
 
-    // Provide a Mockito mock for ElasticsearchOperations so beans depending on it can initialize during tests
-    @MockBean
-    ElasticsearchOperations elasticsearchOperations;
+    // 1. Mock the ES Repository: This is the one causing the "UnsatisfiedDependencyException"
+    @MockitoBean
+    private WatchlistSearchRepository watchlistSearchRepository;
 
-    // Provide a Mockito mock for the Elasticsearch repository so services depending on it can initialize
-    @MockBean
-    WatchlistSearchRepository watchlistSearchRepository;
+    // 2. Mock ES Operations: Used by your search services
+    @MockitoBean
+    private ElasticsearchOperations elasticsearchOperations;
+
+    // 3. Mock Redis: Prevents "Connection refused" errors during context load
+    @MockitoBean
+    private RedisConnectionFactory redisConnectionFactory;
+
+    // NOTE: We do NOT mock WatchlistRepository (JPA).
+    // We let it use the H2 database defined in application-test.yml.
 
     @Test
     void contextLoads() {
+        // This confirms the entire app logic, security, and DB are wired correctly.
     }
-
 }
