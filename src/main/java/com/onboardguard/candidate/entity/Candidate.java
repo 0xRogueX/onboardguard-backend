@@ -53,8 +53,13 @@ public class Candidate extends BaseEntity {
     @Builder.Default
     private List<CandidateDocument> documents = new ArrayList<>();
 
-    // --- Convenience Methods for Screening Mapper ---
+    @Column(name = "verification_locked_by")
+    private Long verificationLockedBy;
 
+    @Column(name = "verification_locked_at")
+    private Instant verificationLockedAt;
+
+    // Convenience Methods for Screening Mapper
     public String getFullName() {
         if (personalDetail == null) return null;
         String first = personalDetail.getFirstName() != null ? personalDetail.getFirstName() : "";
