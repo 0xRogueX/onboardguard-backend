@@ -2,6 +2,7 @@ package com.onboardguard.shared.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.shared.common.enums.RoleCode;
 import lombok.Getter;
@@ -37,7 +38,7 @@ public class CustomUserDetails implements UserDetails {
     private boolean active;
     private boolean locked;
 
-    @JsonIgnore
+    @JsonProperty("passwordHash")
     private String passwordHash;
 
     private Set<String> authorities;
