@@ -42,7 +42,10 @@ spring:
     # Disable Spring Data Elasticsearch repositories during test/local runs by default
     elasticsearch:
       repositories:
-        enabled: true
+        enabled: false
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchAutoConfiguration
 
   # EMAIL / SMTP CONFIGURATION (JavaMailSender)
   mail:
@@ -89,7 +92,7 @@ app:
 
   # Disable Elasticsearch auto-configuration in test / local by default.
   elasticsearch:
-    enabled: true
+    enabled: false
 
 # Async Configuration
 async:

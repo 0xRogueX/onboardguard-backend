@@ -93,14 +93,16 @@ public class WatchlistSyncServiceImpl implements WatchlistSyncService {
 
     @Override
     public void syncSingleEntryToElasticsearch(Long entryId) {
-        WatchlistEntry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new IllegalArgumentException("Entry not found in DB"));
-
-        // Use the shared helper method for this single entry
-        WatchlistDocument document = mapToDocument(entry);
-
-        esRepository.save(document); // SINGLE save
-        log.info("Successfully updated Watchlist Document {} in Elasticsearch", document.getId());
+//        WatchlistEntry entry = entryRepository.findById(entryId)
+//                .orElseThrow(() -> new IllegalArgumentException("Entry not found in DB"));
+//
+//        // Use the shared helper method for this single entry
+//        WatchlistDocument document = mapToDocument(entry);
+//
+//        esRepository.save(document); // SINGLE save
+//        log.info("Successfully updated Watchlist Document {} in Elasticsearch", document.getId());
+        log.info("Elasticsearch sync disabled. Skipping sync for entry ID: {}", entryId);
+        // Do nothing
     }
 
     // ══════════════════════════════════════════════════════════════

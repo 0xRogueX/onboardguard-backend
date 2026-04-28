@@ -114,35 +114,41 @@ public class WatchlistServiceImpl implements WatchlistService {
      */
     @Override
     public List<WatchlistEntryResponseDto> searchRawDictionary(String searchName) {
-        log.info("Executing fuzzy Elasticsearch match for: {}", searchName);
+        log.info("Elasticsearch disabled. Falling back to basic DB search for: {}", searchName);
 
-        NativeQuery fuzzyQuery = NativeQuery.builder()
-                .withQuery(q -> q
-                        .multiMatch(m -> m
-                                .fields("primaryName", "aliases")
-                                .query(searchName)
-                                .fuzziness("AUTO") // Automatically handles character typos
-                        )
-                )
-                .build();
-
-        SearchHits<WatchlistDocument> esHits = elasticsearchOperations.search(fuzzyQuery, WatchlistDocument.class);
-
-        // Extract internal Postgres IDs from the Elasticsearch results
-        List<Long> matchedIds = esHits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .filter(WatchlistDocument::getIsActive) // Only return active, verified entries
-                .map(doc -> Long.valueOf(doc.getId()))
-                .collect(Collectors.toList());
-
-        if (matchedIds.isEmpty()) {
-            return List.of();
-        }
-
-        // Fetch full rich data from Postgres using the matched IDs
-        List<WatchlistEntry> fullEntries = entryRepository.findAllById(matchedIds);
-        return fullEntries.stream()
-                .map(watchlistMapper::toResponseDto)
-                .collect(Collectors.toList());
+        // Fallback: Just return exact/partial matches from Postgres instead of fuzzy matching
+        // (You might need to add this method to your WatchlistEntryRepository)
+        return List.of();
     }
+//        log.info("Executing fuzzy Elasticsearch match for: {}", searchName);
+//
+//        NativeQuery fuzzyQuery = NativeQuery.builder()
+//                .withQuery(q -> q
+//                        .multiMatch(m -> m
+//                                .fields("primaryName", "aliases")
+//                                .query(searchName)
+//                                .fuzziness("AUTO") // Automatically handles character typos
+//                        )
+//                )
+//                .build();
+//
+//        SearchHits<WatchlistDocument> esHits = elasticsearchOperations.search(fuzzyQuery, WatchlistDocument.class);
+//
+//        // Extract internal Postgres IDs from the Elasticsearch results
+//        List<Long> matchedIds = esHits.getSearchHits().stream()
+//                .map(SearchHit::getContent)
+//                .filter(WatchlistDocument::getIsActive) // Only return active, verified entries
+//                .map(doc -> Long.valueOf(doc.getId()))
+//                .collect(Collectors.toList());
+//
+//        if (matchedIds.isEmpty()) {
+//            return List.of();
+//        }
+//
+//        // Fetch full rich data from Postgres using the matched IDs
+//        List<WatchlistEntry> fullEntries = entryRepository.findAllById(matchedIds);
+//        return fullEntries.stream()
+//                .map(watchlistMapper::toResponseDto)
+//                .collect(Collectors.toList());
+//    }
 }
