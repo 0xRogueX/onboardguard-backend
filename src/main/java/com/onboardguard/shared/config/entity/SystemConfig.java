@@ -1,7 +1,8 @@
 package com.onboardguard.shared.config.entity;
 
 import com.onboardguard.shared.common.entity.BaseEntity;
-import com.onboardguard.shared.common.enums.ConfigType;
+import com.onboardguard.shared.common.enums.ConfigCategoryType;
+import com.onboardguard.shared.common.enums.ConfigDataType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,12 +25,14 @@ public class SystemConfig extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "config_type", nullable = false)
-    private ConfigType configType;
+    private ConfigDataType configDataType;
+
+    @Column(name = "category")
+    private ConfigCategoryType category;
 
     @Column(name = "description")
     private String description;
 
     @Column(name = "is_sensitive", nullable = false)
     private Boolean isSensitive = false;
-
 }

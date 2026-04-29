@@ -13,6 +13,7 @@ import com.onboardguard.screening.enums.ScreeningStatus;
 import com.onboardguard.screening.mapper.ScreeningMapper;
 import com.onboardguard.screening.repository.ScreeningResultRepository;
 import com.onboardguard.screening.strategy.ScreeningStrategy;
+import com.onboardguard.shared.config.ConfigConstants;
 import com.onboardguard.shared.config.service.SystemConfigService;
 import com.onboardguard.watchlist.repository.WatchlistEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,7 +41,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ScreeningOrchestrationService {
 
-    private static final String KEY_ACTIVE_STRATEGY = "screening.active.strategy";
 
     private final Map<String, ScreeningStrategy> strategyMap;
 
@@ -122,12 +122,15 @@ public class ScreeningOrchestrationService {
         }
     }
 
-    // Dynamic DI
+    // Dynamic DI — Read active strategy from SystemConfig
     private ScreeningStrategy resolveActiveStrategy() {
-        String configured = systemConfigService.getString(KEY_ACTIVE_STRATEGY);
-        if (configured == null) configured = "basic";
+        String configured = systemConfigService.getString(
+                ConfigConstants.ACTIVE_SCREENING_STRATEGY,
+                ConfigConstants.Defaults.ACTIVE_STRATEGY);
+
         String beanName = configured.toLowerCase() + "ScreeningStrategy";
         ScreeningStrategy strategy = strategyMap.get(beanName);
+
         if (strategy == null) {
             log.warn("Unknown strategy '{}' — falling back to BASIC", configured);
             strategy = strategyMap.get("basicScreeningStrategy");
