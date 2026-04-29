@@ -3,6 +3,7 @@ package com.onboardguard.screening.service;
 
 import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.officer.service.AlertService;
 import com.onboardguard.screening.dto.CandidateScreeningData;
 import com.onboardguard.screening.dto.MatchDetailDto;
 import com.onboardguard.screening.dto.ScreeningResultDto;
@@ -50,6 +51,7 @@ public class ScreeningOrchestrationService {
     private final SystemConfigService systemConfigService;
     private final RiskScoringEngine riskScoringEngine;
     private final ScreeningMapper screeningMapper;
+    private final AlertService alertService;
 
     @Transactional
     @PreAuthorize("hasAnyAuthority('SCREENING_RESCREEN','SCREENING_CANDIDATE')")
@@ -100,11 +102,11 @@ public class ScreeningOrchestrationService {
             candidate.setScreeningStatus(newStatus);
             candidateRepository.save(candidate);
 
-            // 10. Trigger alert if MEDIUM or HIGH (Alert Module missing)
-            // if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
-            //         || resultDto.getRiskLevel() == RiskLevel.HIGH) {
-            //     alertService.createAlert(savedResult);
-            // }
+            // 10. Trigger alert if MEDIUM or HIGH — NOW ACTIVE!
+            if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
+                    || resultDto.getRiskLevel() == RiskLevel.HIGH) {
+                alertService.createAlert(savedResult);
+            }
 
             log.info("Screening complete candidateId={} score={} level={}",
                     candidateId, resultDto.getRiskScore(), resultDto.getRiskLevel());

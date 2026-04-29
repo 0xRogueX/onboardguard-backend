@@ -1,6 +1,8 @@
 package com.onboardguard.officer.service.impl;
 
 
+import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.officer.dto.AlertDetailDto;
 import com.onboardguard.officer.entity.Alert;
 import com.onboardguard.officer.entity.Case;
@@ -9,14 +11,21 @@ import com.onboardguard.officer.mapper.AlertMapper;
 import com.onboardguard.officer.repository.AlertRepository;
 import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.AlertService;
+import com.onboardguard.screening.entity.ScreeningResult;
+import com.onboardguard.screening.enums.RiskLevel;
 import com.onboardguard.shared.common.enums.AlertStatus;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
+import com.onboardguard.shared.common.events.AlertGeneratedEvent;
+import com.onboardguard.shared.config.ConfigConstants;
+import com.onboardguard.shared.config.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +43,9 @@ public class AlertServiceImpl implements AlertService {
     private final AlertRepository alertRepository;
     private final CaseRepository caseRepository;
     private final AlertMapper alertMapper;
+    private final CandidateRepository candidateRepository;
+    private final SystemConfigService systemConfigService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -142,9 +155,94 @@ public class AlertServiceImpl implements AlertService {
 
     }
 
+    /**
+     * CREATE ALERT: Generates an Alert record from a completed ScreeningResult with HIGH/MEDIUM risk.
+     * Automatically computes SLA deadline from SystemConfig and publishes AlertGeneratedEvent to notify officers.
+     * This is the missing link between Screening Engine and Officer Alert Queue!
+     */
+    @Override
+    @Transactional
+    public void createAlert(ScreeningResult screeningResult) {
+        try {
+            // 1. Only create alerts for MEDIUM or HIGH risk
+            if (screeningResult.getRiskLevel() != RiskLevel.MEDIUM && screeningResult.getRiskLevel() != RiskLevel.HIGH) {
+                log.debug("Skipping alert creation for candidateId={} — risk level is {}",
+                    screeningResult.getCandidate().getId(), screeningResult.getRiskLevel());
+                return;
+            }
+
+            // 2. Map RiskLevel to SeverityLevel for alert
+            SeverityLevel severity = mapRiskLevelToSeverity(screeningResult.getRiskLevel());
+
+            // 3. Fetch candidate for context
+            Candidate candidate = screeningResult.getCandidate();
+
+            // 4. Extract matched watchlist categories from screening matches
+            List<String> matchedCategories = screeningResult.getMatches().stream()
+                    .map(match -> match.getWatchlistEntry().getCategory().getName())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            // 5. Get SLA hours from SystemConfig (default 48 hours per requirements)
+            Integer slaHours = systemConfigService.getInt(
+                    ConfigConstants.SLA_HOURS,
+                    ConfigConstants.Defaults.SLA_HOURS);
+
+            // 6. Create the Alert entity
+            Alert alert = Alert.builder()
+                    .candidateId(candidate.getId())
+                    .screeningResultId(screeningResult.getId())
+                    .severity(severity)
+                    .status(AlertStatus.OPEN)  // Starts in OPEN state — waiting for L1 Officer
+                    .matchedCategories(matchedCategories)
+                    .slaDeadline(Instant.now().plus(slaHours, ChronoUnit.HOURS))
+                    .isSlaBreached(false)
+                    .build();
+
+            // 7. Persist the alert
+            Alert savedAlert = alertRepository.save(alert);
+
+            // 8. Publish event for email notification
+            publishAlertNotificationEvent(savedAlert, candidate);
+
+            log.info("Alert ID {} created for candidateId={} with severity={} and SLA deadline in {} hours",
+                    savedAlert.getId(), candidate.getId(), severity, slaHours);
+
+        } catch (Exception ex) {
+            log.error("Failed to create alert from screening result ID: {}", screeningResult.getId(), ex);
+            // Don't rethrow — screening should not fail if alert creation fails
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ═══════════════════════════════════════════════════════════════
+
     private Alert getAlertById(Long alertId) {
         return alertRepository.findById(alertId)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
+    }
+
+    private SeverityLevel mapRiskLevelToSeverity(RiskLevel riskLevel) {
+        return switch (riskLevel) {
+            case HIGH -> SeverityLevel.HIGH;
+            case MEDIUM -> SeverityLevel.MEDIUM;
+            case LOW -> SeverityLevel.LOW;
+        };
+    }
+
+    private void publishAlertNotificationEvent(Alert alert, Candidate candidate) {
+        // Get the first admin or officer email to notify (system admin by default)
+        String notificationEmail = "admin@onboardguard.com"; // Default system email
+
+        AlertGeneratedEvent event = new AlertGeneratedEvent(
+                notificationEmail,
+                alert.getId(),
+                candidate.getFullName(),
+                alert.getSeverity().toString()
+        );
+
+        eventPublisher.publishEvent(event);
     }
 
     /**
