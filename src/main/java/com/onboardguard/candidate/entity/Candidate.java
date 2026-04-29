@@ -53,6 +53,13 @@ public class Candidate extends BaseEntity {
     @Builder.Default
     private List<CandidateDocument> documents = new ArrayList<>();
 
+    // officer locking fields for document verification
+    @Column(name = "verification_locked_by")
+    private Long verificationLockedBy;
+
+    @Column(name = "verification_locked_at")
+    private Instant verificationLockedAt;
+
     // --- Convenience Methods for Screening Mapper ---
 
     public String getFullName() {
