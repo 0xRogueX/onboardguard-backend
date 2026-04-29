@@ -24,6 +24,7 @@ public interface AuthMapper {
     @Mapping(target = "locked",       constant = "false")
     AppUser toEntity(RegisterCandidateDto dto, String encodedPassword);
 
+    @Mapping(target = "id",            ignore = true)
     @Mapping(target = "email",         source = "dto.email")
     @Mapping(target = "fullName",      source = "dto.fullName")
     @Mapping(target = "phone",         source = "dto.phone")

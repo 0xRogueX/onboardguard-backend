@@ -3,9 +3,16 @@ package com.onboardguard.officer.service;
 import com.onboardguard.officer.dto.CaseDetailDto;
 import com.onboardguard.officer.dto.EscalateCaseDto;
 import com.onboardguard.officer.dto.ResolveCaseDto;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface CaseService {
+
+    List<CaseDetailDto> getAvailableCasesForQueue();
+    
+    List<CaseDetailDto> getEscalatedCasesQueue();
 
     CaseDetailDto getCaseDetails(Long caseId);
 

@@ -1,6 +1,5 @@
 package com.onboardguard.officer.controller;
 
-import com.onboardguard.candidate.dto.response.DocumentResponseDto;
 import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.dto.RejectDocumentRequestDto;
@@ -11,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,7 +33,7 @@ public class DocumentVerificationController {
      * Instantly returns the full dashboard data so the UI can route to the verification screen.
      */
     @PostMapping("/candidates/assign-next")
-    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> assignNextCandidate() {
+    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> claimNextAvailableCandidate() {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
 
         CandidateVerificationDashboardDto dashboardData = documentVerificationService.claimNextAvailableCandidate(currentOfficerId);

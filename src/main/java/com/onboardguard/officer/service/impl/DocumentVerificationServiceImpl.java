@@ -20,6 +20,7 @@ import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
     public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
 
         // Fetch unlocked candidates who are waiting for document verification
@@ -77,6 +79,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public void claimCandidateForVerification(Long candidateId, Long officerId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -93,6 +96,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public CandidateVerificationDashboardDto claimNextAvailableCandidate(Long officerId) {
         Candidate nextCandidate = candidateRepository
                 .findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus.DOCUMENTS_UPLOADED)
@@ -109,6 +113,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('DOC_VIEW_DETAILS')")
     public CandidateVerificationDashboardDto getCandidateVerificationDetails(Long candidateId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with ID: " + candidateId));
@@ -124,6 +129,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     // 3. DOCUMENT VERIFICATION LOGIC
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_APPROVE')")
     public void approveDocument(Long documentId, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
         validateLockOwnership(document.getCandidate(), officerId);
@@ -145,6 +151,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_REJECT')")
     public void rejectDocument(Long documentId, String reason, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
         validateLockOwnership(document.getCandidate(), officerId);

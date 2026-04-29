@@ -12,13 +12,16 @@ import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
+import com.onboardguard.shared.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -27,13 +30,49 @@ public class CaseServiceImpl implements CaseService {
 
     private final CaseRepository caseRepository;
     private final CaseMapper caseMapper;
+    private final SecurityUtils securityUtils;
     private final ApplicationEventPublisher eventPublisher; // For notifying the Candidate module later
 
+    // L1 QUEUE
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
+    public List<CaseDetailDto> getAvailableCasesForQueue() {
+        return caseRepository
+                .findAvailableCasesForQueue(CaseStatus.IN_REVIEW)
+                .stream()
+                .map(caseMapper::toDto)
+                .toList();
+    }
+
+    // L2 QUEUE
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
+    public List<CaseDetailDto> getEscalatedCasesQueue() {
+        return caseRepository
+                .findEscalatedCasesForL2Queue(CaseStatus.ESCALATED)
+                .stream()
+                .map(caseMapper::toDto)
+                .toList();
+    }
+
+    // SAFE GET
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
     public CaseDetailDto getCaseDetails(Long caseId) {
-        Case investigationCase = getCaseById(caseId);
-        return caseMapper.toDto(investigationCase);
+
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
+
+        Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
+
+        if (c.getAssignedOfficerId() != null && !c.getAssignedOfficerId().equals(userId)) {
+            throw new UnauthorizedAccessException("You cannot access this case.");
+        }
+
+        return caseMapper.toDto(c);
     }
 
     /**
@@ -41,6 +80,7 @@ public class CaseServiceImpl implements CaseService {
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('CASE_ESCALATE')")
     public void escalateCase(Long caseId, EscalateCaseDto dto, Long l1OfficerId) {
         Case investigationCase = getCaseById(caseId);
 
@@ -73,16 +113,22 @@ public class CaseServiceImpl implements CaseService {
         log.info("Case ID {} escalated to L2 queue by L1 Officer ID {}", caseId, l1OfficerId);
     }
 
-    /**
-     * L2 ACTION: Claim an escalated case from the queue to start reviewing.
-     */
+
+     // L2 ACTION: Claim an escalated case from the queue to start reviewing.
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
     public void claimEscalatedCase(Long caseId, Long l2OfficerId) {
-        Case investigationCase = getCaseById(caseId);
+
+        Case investigationCase = caseRepository.findByIdForUpdate(caseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
             throw new IllegalStateException("Only ESCALATED cases can be claimed by an L2 Checker.");
+        }
+
+        if (investigationCase.getAssignedOfficerId() != null) {
+            throw new IllegalStateException("Case already claimed by another officer.");
         }
 
         // Lock the case to this specific L2 Officer
@@ -92,11 +138,25 @@ public class CaseServiceImpl implements CaseService {
         log.info("ESCALATED Case ID {} claimed by L2 Officer ID {}", caseId, l2OfficerId);
     }
 
-    /**
-     * L2 ACTION: Make the final decision (CLEARED or REJECTED).
-     */
+
+    @Transactional
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
+    public CaseDetailDto claimNextEscalatedCase(Long officerId) {
+
+        Case investigationCase = caseRepository
+                .findNextEscalatedCaseForUpdate(CaseStatus.ESCALATED)
+                .orElseThrow(() -> new ResourceNotFoundException("No escalated cases available"));
+
+        investigationCase.setAssignedOfficerId(officerId);
+        investigationCase.setAssignedAt(Instant.now());
+
+        return caseMapper.toDto(caseRepository.save(investigationCase));
+    }
+
+    // L2 ACTION: Make the final decision (CLEARED or REJECTED).
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
     public void resolveCase(Long caseId, ResolveCaseDto dto, Long l2OfficerId) {
         Case investigationCase = getCaseById(caseId);
 
@@ -129,10 +189,6 @@ public class CaseServiceImpl implements CaseService {
         // FUTURE: eventPublisher.publishEvent(new CaseResolvedEvent(investigationCase.getCandidateId(), dto.outcome()));
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PRIVATE HELPER METHODS
-    // ══════════════════════════════════════════════════════════════
-
     private Case getCaseById(Long caseId) {
         return caseRepository.findById(caseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found with ID: " + caseId));
@@ -140,8 +196,7 @@ public class CaseServiceImpl implements CaseService {
 
     private void validateCaseOwnership(Case investigationCase, Long officerId) {
         if (!officerId.equals(investigationCase.getAssignedOfficerId())) {
-            log.warn("Security Alert: Officer ID {} attempted to act on Case ID {} locked by Officer ID {}",
-                    officerId, investigationCase.getId(), investigationCase.getAssignedOfficerId());
+            log.warn("Security Alert: Officer ID {} attempted to act on Case ID {} locked by Officer ID {}", officerId, investigationCase.getId(), investigationCase.getAssignedOfficerId());
             throw new UnauthorizedAccessException("You cannot perform this action because the case is locked by another officer.");
         }
     }

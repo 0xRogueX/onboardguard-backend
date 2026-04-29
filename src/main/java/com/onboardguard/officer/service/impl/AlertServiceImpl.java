@@ -17,11 +17,13 @@ import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +34,20 @@ public class AlertServiceImpl implements AlertService {
     private final CaseRepository caseRepository;
     private final AlertMapper alertMapper;
 
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ALERT_VIEW')")
+    public List<AlertDetailDto> getOpenAlertsQueue() {
+        return alertRepository
+                .findOpenAlertsForQueue(AlertStatus.OPEN)
+                .stream()
+                .map(alertMapper::toDto)
+                .toList();
+    }
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto acknowledgeAlert(Long alertId, Long officerId){
         Alert alert = getAlertById(alertId);
 
@@ -55,6 +68,7 @@ public class AlertServiceImpl implements AlertService {
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto claimNextAvailableAlert(Long officerId) {
 
         // 1. Fetch the oldest open alert safely with a Pessimistic DB Lock
@@ -74,6 +88,7 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('ALERT_DISMISS')")
     public void dismissAlert(Long alertId, Long officerId, String reason) {
         Alert alert = getAlertById(alertId);
 
@@ -89,6 +104,7 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('ALERT_CONVERT_TO_CASE')")
     public Long convertToCase(Long alertId, Long officerId){
        Alert alert = getAlertById(alertId);
 

@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
  *
  * Jackson deserialization requirement:
  *   Fields must NOT be final (Jackson sets them after no-arg construction).
- *   @JsonProperty on each field ensures the JSON key maps correctly.
- *   @JsonIgnore on passwordHash ensures the password is never written to Redis.
  */
 @Getter
 @Setter

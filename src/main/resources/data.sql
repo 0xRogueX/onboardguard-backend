@@ -14,7 +14,7 @@ INSERT INTO users (
     updated_at,
     version      -- Added version column
 ) VALUES (
-             'dev.vivek.dadhaniya@gmail.com',
+             'vivekdadhaniya01@gmail.com',
              'Vivek Dadhaniya',
              '+911005550001',
              '$2a$10$zGRLkBrIBIKI2bReYnw9dejmVCf4UVarfKEDVuiZ4vFfoYvj3iY6q',

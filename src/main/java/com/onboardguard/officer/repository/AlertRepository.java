@@ -4,6 +4,8 @@ import com.onboardguard.officer.entity.Alert;
 import com.onboardguard.shared.common.enums.AlertStatus;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,6 +33,21 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
      * Returns the integer count of exactly how many rows were updated.
      */
     @Modifying
-    @Query("UPDATE Alert a SET a.isSlaBreached = true WHERE a.isSlaBreached = false AND a.status IN :activeStatuses AND a.slaDeadline < :now")
+    @Query("""
+        UPDATE Alert a
+        SET a.isSlaBreached = true
+        WHERE a.isSlaBreached = false
+        AND a.status IN :activeStatuses
+        AND a.slaDeadline < :now
+    """)
     int markBreachedAlerts(@Param("activeStatuses") List<AlertStatus> activeStatuses, @Param("now") Instant now);
+
+    @Query("""
+        SELECT a FROM Alert a
+        WHERE a.status = :status
+        ORDER BY a.slaDeadline ASC
+    """)
+    List<Alert> findOpenAlertsForQueue(@Param("status") AlertStatus status);
+
+    Page<Alert> findByStatusOrderBySlaDeadlineAsc(AlertStatus status, Pageable pageable);
 }
