@@ -52,7 +52,7 @@ public class ScreeningOrchestrationService {
     private final ScreeningMapper screeningMapper;
 
     @Transactional
-    @PreAuthorize("hasAuthority('SCREENING_RESCREEN')")
+    @PreAuthorize("hasAnyAuthority('SCREENING_RESCREEN','SCREENING_CANDIDATE')")
     public ScreeningResultDto runScreening(Long candidateId) {
         log.info("Screening triggered for candidateId={}", candidateId);
 
@@ -144,7 +144,7 @@ public class ScreeningOrchestrationService {
                         .riskScore(0.0)
                         .riskLevel(RiskLevel.LOW)
                         .status(ScreeningStatus.PENDING)
-                        // Threshold snapshots captured NOW — immutable from this point
+                        // Threshold snapshots captured NOW - immutable from this point
                         .mediumThresholdSnapshot(riskScoringEngine.getMediumThreshold())
                         .highThresholdSnapshot(riskScoringEngine.getHighThreshold())
                         .fuzzyThresholdSnapshot(riskScoringEngine.getFuzzyThreshold())
@@ -163,7 +163,7 @@ public class ScreeningOrchestrationService {
             // Mapper handles all field + snapshot mapping
             ScreeningMatch match = screeningMapper.toScreeningMatchEntity(dto);
 
-            // watchlistEntry is ignored by mapper — set manually via proxy (no extra SELECT)
+            // watchlistEntry is ignored by mapper - set manually via proxy (no extra SELECT)
             match.setWatchlistEntry(
                     watchlistEntryRepository.getReferenceById(dto.getWatchlistEntryId()));
 

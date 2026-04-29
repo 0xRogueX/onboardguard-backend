@@ -37,6 +37,8 @@ public final class RolePermissions {
     public static final String ALERT_DISMISS               = "ALERT_DISMISS";
     public static final String ALERT_CONVERT_TO_CASE       = "ALERT_CONVERT_TO_CASE";
 
+    public static final String SCREENING_CANDIDATE         = "SCREENING_CANDIDATE";
+
     // ============================================================
     // CASE PERMISSIONS
     // ============================================================
@@ -124,6 +126,8 @@ public final class RolePermissions {
                     DOC_APPROVE,
                     DOC_REJECT,
                     DOC_VERIFY,
+
+                    SCREENING_CANDIDATE,
 
                     // WATCHLIST
                     WATCHLIST_VIEW,
