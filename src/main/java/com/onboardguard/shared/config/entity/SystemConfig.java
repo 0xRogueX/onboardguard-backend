@@ -27,6 +27,7 @@ public class SystemConfig extends BaseEntity {
     @Column(name = "config_type", nullable = false)
     private ConfigDataType configDataType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "category")
     private ConfigCategoryType category;
 

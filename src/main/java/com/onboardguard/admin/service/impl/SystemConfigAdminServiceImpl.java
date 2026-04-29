@@ -40,7 +40,7 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
      */
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
+    @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
     public void requestConfigUpdate(Long configId, UpdateSystemConfigDto updateDto,
                                     Long currentUserId, RoleCode currentUserRole) {
 
@@ -91,7 +91,7 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
      */
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
+    @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
     public List<SystemConfigResponseDto> getAllConfigs() {
         return systemConfigRepository.findAll().stream()
                 .map(systemConfigMapper::toResponseDto)
