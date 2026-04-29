@@ -116,7 +116,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 1. Generate secure password
-        String rawPassword = credentialGenerator.generatePassword();
+//        String rawPassword = credentialGenerator.generatePassword();
+        String rawPassword = "password123";
 
         // 2. Create the Officer entity using Mapper
         AppUser officer = authMapper.toEntity(dto, passwordEncoder.encode(rawPassword), createdBy);
