@@ -7,18 +7,32 @@ import com.onboardguard.shared.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/officer/alerts")
 @RequiredArgsConstructor
-//@PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_SUPER_ADMIN')")
 public class AlertController {
 
     private final AlertService alertService;
     private final SecurityUtils securityUtils;
+
+    /**
+     * L1 Dashboard:
+     * Shows all OPEN alerts (not yet picked)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AlertDetailDto>>> getOpenAlertsQueue() {
+
+        List<AlertDetailDto> alerts = alertService.getOpenAlertsQueue();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Open alerts retrieved successfully.", alerts)
+        );
+    }
 
     /**
      * POST: Claim an OPEN alert and lock it for review.

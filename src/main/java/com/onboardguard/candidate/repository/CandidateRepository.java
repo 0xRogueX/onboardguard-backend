@@ -22,8 +22,6 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     /**
      * GET NEXT CANDIDATE (FIFO Queue with SKIP LOCKED):
      * Finds the oldest candidate waiting for document verification that is not currently locked.
-     * * @Lock(PESSIMISTIC_WRITE) issues a SELECT ... FOR UPDATE.
-     * @QueryHints(timeout = "-2") instructs Hibernate to append SKIP LOCKED.
      * This ensures multiple officers can pull from the queue simultaneously without database blocking.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -36,5 +34,4 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
      */
     @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus = :status AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
     List<Candidate> findAvailableCandidatesForVerification(@Param("status") OnboardingStatus status);
-
 }

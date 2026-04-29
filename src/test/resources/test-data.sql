@@ -20,8 +20,8 @@ INSERT INTO users (
     updated_at,
     version
 ) VALUES
-      ('dev.vivek.dadhaniya@gmail.com', 'Vivek Dadhaniya', '+911005550001', '$2a$10$zGRLkBrIBIKI2bReYnw9dejmVCf4UVarfKEDVuiZ4vFfoYvj3iY6q', 'ROLE_SUPER_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-      ('vrundachavda112@gmail.com', 'Vrunda Chavda', '+911005550002', '$2a$10$zGRLkBrIBIKI2bReYnw9dejmVCf4UVarfKEDVuiZ4vFfoYvj3iY6q', 'ROLE_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
+    ('dev.vivek.dadhaniya@gmail.com', 'Vivek Dadhaniya', '+911005550001', '$2a$12$f2rXDoQMZARDYQpgir7/cOBaPrNgGdzSw/j0z6S539CPpbTYdpPxC', 'ROLE_SUPER_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+    ('vrundachavda112@gmail.com', 'Vrunda Chavda', '+911005550002', '$2a$12$f2rXDoQMZARDYQpgir7/cOBaPrNgGdzSw/j0z6S539CPpbTYdpPxC', 'ROLE_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
 
 -- 1. Seed Sources
 INSERT INTO watchlist_sources (id, code, name, type, credibility_weight, active, created_at, updated_at, version)
@@ -48,16 +48,16 @@ VALUES
 INSERT INTO watchlist_entries
 (id, category_id, source_id, primary_name, primary_name_normalized, severity, pan_number, nationality, category_specific_data, is_active, created_at, updated_at, version)
 VALUES
-    (1001, 1, 1, 'Osama Bin Laden', 'OSAMABINLADEN', 'HIGH', NULL, 'Afghan', '{"program":"Al-Qaida"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1002, 2, 6, 'Jordan Belfort', 'JORDANBELFORT', 'HIGH', 'ABCDE1234F', 'American', '{"crime":"Securities Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1003, 2, 5, 'Vijay Mallya', 'VIJAYMALLYA', 'HIGH', 'AAACV1234A', 'Indian', '{"case":"Bank Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1004, 2, 5, 'Nirav Modi', 'NIRAVMODI', 'HIGH', 'AAACN2345B', 'Indian', '{"case":"PNB Scam"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1005, 2, 5, 'Mehul Choksi', 'MEHULCHOKSI', 'HIGH', 'AAACM6789D', 'Indian', '{"case":"Bank Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1006, 1, 7, 'Smit Karbathiya', 'SMITKARBATHIYA', 'HIGH', NULL, 'Indian', '{"type":"Criminal"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1007, 2, 7, 'Divayrajsinh Sindhav', 'DIVAYRAJSINHSINDHAV', 'HIGH', NULL, 'Indian', '{"type":"Cyber Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1008, 5, 4, 'Neel Chhantbar', 'NEELCHHANTBAR', 'MEDIUM', NULL, 'Indian', '{"status":"Debarred Professional"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1009, 4, 6, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'MEDIUM', NULL, 'Indian', '{"role":"PEP"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    (1010, 1, 3, 'Tanmay Jotangia', 'TANMAYJOTANGIA', 'HIGH', NULL, 'Indian', '{"record":"Criminal"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
+(1001, 1, 1, 'Osama Bin Laden', 'OSAMABINLADEN', 'HIGH', NULL, 'Afghan', '{"program":"Al-Qaida"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1002, 2, 6, 'Jordan Belfort', 'JORDANBELFORT', 'HIGH', 'ABCDE1234F', 'American', '{"crime":"Securities Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1003, 2, 5, 'Vijay Mallya', 'VIJAYMALLYA', 'HIGH', 'AAACV1234A', 'Indian', '{"case":"Bank Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1004, 2, 5, 'Nirav Modi', 'NIRAVMODI', 'HIGH', 'AAACN2345B', 'Indian', '{"case":"PNB Scam"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1005, 2, 5, 'Mehul Choksi', 'MEHULCHOKSI', 'HIGH', 'AAACM6789D', 'Indian', '{"case":"Bank Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1006, 1, 7, 'Smit Karbathiya', 'SMITKARBATHIYA', 'HIGH', NULL, 'Indian', '{"type":"Criminal"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1007, 2, 7, 'Divayrajsinh Sindhav', 'DIVAYRAJSINHSINDHAV', 'HIGH', NULL, 'Indian', '{"type":"Cyber Fraud"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1008, 5, 4, 'Neel Chhantbar', 'NEELCHHANTBAR', 'MEDIUM', NULL, 'Indian', '{"status":"Debarred Professional"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1009, 4, 6, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'MEDIUM', NULL, 'Indian', '{"role":"PEP"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+(1010, 1, 3, 'Tanmay Jotangia', 'TANMAYJOTANGIA', 'HIGH', NULL, 'Indian', '{"record":"Criminal"}', true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
 
 -- 4. Seed Aliases (comment out since we don't have all requisite entries)
 -- INSERT INTO watchlist_aliases (id, entry_id, source_id, alias_name, alias_name_normalized, alias_type, created_at, updated_at, version)

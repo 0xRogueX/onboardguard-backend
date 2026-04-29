@@ -2,6 +2,7 @@ package com.onboardguard.shared.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.shared.common.enums.RoleCode;
 import lombok.Getter;
@@ -22,12 +23,10 @@ import java.util.stream.Collectors;
  *
  * Jackson deserialization requirement:
  *   Fields must NOT be final (Jackson sets them after no-arg construction).
- *   @JsonProperty on each field ensures the JSON key maps correctly.
- *   @JsonIgnore on passwordHash ensures the password is never written to Redis.
  */
 @Getter
 @Setter
-//@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CustomUserDetails implements UserDetails {
 
     private Long userId;
@@ -37,7 +36,7 @@ public class CustomUserDetails implements UserDetails {
     private boolean active;
     private boolean locked;
 
-//    @JsonIgnore
+    @JsonProperty("passwordHash")
     private String passwordHash;
 
     private Set<String> authorities;
@@ -70,8 +69,7 @@ public class CustomUserDetails implements UserDetails {
                 .collect(Collectors.toSet());
     }
 
-    @Override
-//    @JsonIgnore
+    @Override @JsonIgnore
     public String getPassword() {
         return passwordHash;
     }

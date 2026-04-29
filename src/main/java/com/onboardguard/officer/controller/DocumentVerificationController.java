@@ -1,6 +1,5 @@
 package com.onboardguard.officer.controller;
 
-import com.onboardguard.candidate.dto.response.DocumentResponseDto;
 import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.dto.RejectDocumentRequestDto;
@@ -11,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,25 +25,6 @@ public class DocumentVerificationController {
     private final SecurityUtils securityUtils;
 
     // ══════════════════════════════════════════════════════════════
-    // QUEUE VIEW ENDPOINT
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * GET: Returns the queue of all candidates waiting for document verification.
-     * Used to populate the Officer's "Pending Verifications" data grid.
-     */
-    @GetMapping("/candidates/pending")
-    public ResponseEntity<ApiResponse<List<CandidateQueueItemDto>>> getPendingCandidatesQueue() {
-
-        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue();
-
-        return ResponseEntity.ok(ApiResponse.success(
-                "Pending candidate queue retrieved successfully.",
-                queue
-        ));
-    }
-
-    // ══════════════════════════════════════════════════════════════
     // 1. QUEUE & CLAIM ENDPOINTS
     // ══════════════════════════════════════════════════════════════
 
@@ -54,11 +33,10 @@ public class DocumentVerificationController {
      * Instantly returns the full dashboard data so the UI can route to the verification screen.
      */
     @PostMapping("/candidates/assign-next")
-    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> assignNextCandidate() {
+    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> claimNextAvailableCandidate() {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
 
-        CandidateVerificationDashboardDto dashboardData =
-                documentVerificationService.claimNextAvailableCandidate(currentOfficerId);
+        CandidateVerificationDashboardDto dashboardData = documentVerificationService.claimNextAvailableCandidate(currentOfficerId);
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Candidate successfully assigned from the queue.",
@@ -93,8 +71,7 @@ public class DocumentVerificationController {
     public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> getCandidateVerificationDetails(
             @PathVariable Long candidateId) {
 
-        CandidateVerificationDashboardDto dashboardData =
-                documentVerificationService.getCandidateVerificationDetails(candidateId);
+        CandidateVerificationDashboardDto dashboardData = documentVerificationService.getCandidateVerificationDetails(candidateId);
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Candidate verification details retrieved successfully.",
@@ -126,6 +103,25 @@ public class DocumentVerificationController {
         documentVerificationService.rejectDocument(documentId, request.reason(), currentOfficerId);
 
         return ResponseEntity.ok(ApiResponse.success("Document rejected. Candidate will be notified to re-upload.", null));
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // QUEUE VIEW ENDPOINT
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET: Returns the queue of all candidates waiting for document verification.
+     * Used to populate the Officer's "Pending Verifications" data grid.
+     */
+    @GetMapping("/candidates/pending")
+    public ResponseEntity<ApiResponse<List<CandidateQueueItemDto>>> getPendingCandidatesQueue() {
+
+        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue();
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Pending candidate queue retrieved successfully.",
+                queue
+        ));
     }
 
 }

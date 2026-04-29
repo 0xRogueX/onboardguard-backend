@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/officer/cases")
@@ -23,11 +25,42 @@ public class CaseController {
     private final SecurityUtils securityUtils;
 
     /**
+     * L1 Dashboard:
+     * Returns all NEW cases that are:
+     * - NOT resolved
+     * - NOT assigned (free to pick)
+     */
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getAvailableCasesQueue() {
+
+        List<CaseDetailDto> cases = caseService.getAvailableCasesForQueue();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Available cases retrieved successfully.", cases)
+        );
+    }
+
+    /**
+     * L2 Dashboard:
+     * Returns all ESCALATED cases waiting for L2 review
+     */
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
+    @GetMapping("/escalated")
+    public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getEscalatedCasesQueue() {
+
+        List<CaseDetailDto> cases = caseService.getEscalatedCasesQueue();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Escalated cases retrieved successfully.", cases)
+        );
+    }
+
+    /**
      * GET: Fetch the full details, timeline, and notes of a Case.
      * Both L1 and L2 officers need to read cases.
      */
     @GetMapping("/{caseId}")
-//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<CaseDetailDto>> getCaseDetails(@PathVariable Long caseId) {
         CaseDetailDto caseDetails = caseService.getCaseDetails(caseId);
         return ResponseEntity.ok(ApiResponse.success("Case details retrieved successfully.", caseDetails));
@@ -37,7 +70,6 @@ public class CaseController {
      * POST: Append a note to the investigation timeline.
      */
     @PostMapping("/{caseId}/notes")
-//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2')")
     public ResponseEntity<ApiResponse<CaseNoteDto>> addInvestigationNote(
             @PathVariable Long caseId,
             @Valid @RequestBody NoteRequest request) {
@@ -53,7 +85,6 @@ public class CaseController {
      * STRICT ROLE: Only L1 Officers can escalate cases.
      */
     @PostMapping("/{caseId}/escalate")
-//    @PreAuthorize("hasRole('ROLE_OFFICER_L1')")
     public ResponseEntity<ApiResponse<Void>> escalateCase(
             @PathVariable Long caseId,
             @Valid @RequestBody EscalateCaseDto dto) {
@@ -69,7 +100,6 @@ public class CaseController {
      * STRICT ROLE: Only L2 Officers can claim escalated cases.
      */
     @PostMapping("/{caseId}/claim")
-//    @PreAuthorize("hasRole('ROLE_OFFICER_L2')")
     public ResponseEntity<ApiResponse<Void>> claimEscalatedCase(@PathVariable Long caseId) {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
         caseService.claimEscalatedCase(caseId, currentOfficerId);
@@ -82,7 +112,6 @@ public class CaseController {
      * STRICT ROLE: Only L2 Officers can resolve cases.
      */
     @PostMapping("/{caseId}/resolve")
-//    @PreAuthorize("hasRole('ROLE_OFFICER_L2')")
     public ResponseEntity<ApiResponse<Void>> resolveCase(
             @PathVariable Long caseId,
             @Valid @RequestBody ResolveCaseDto dto) {

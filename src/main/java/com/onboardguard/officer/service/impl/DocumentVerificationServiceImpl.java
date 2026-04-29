@@ -20,6 +20,7 @@ import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,10 +34,22 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     private final CandidateDocumentRepository documentRepository;
     private final CandidateRepository candidateRepository;
-    private final CandidateDocumentServiceImpl candidateDocumentService; // For S3 presigned URLs
-    private final OfficerCandidateMapper officerCandidateMapper;         // MapStruct for the Dashboard DTO
+    private final CandidateDocumentServiceImpl candidateDocumentService;
+    private final OfficerCandidateMapper officerCandidateMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ScreeningOrchestrationService screeningOrchestrationService;
+
+    /**
+     * Officer pulls all documents for a specific candidate to review them side-by-side.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId) {
+        return documentRepository.findByCandidateId(candidateId)
+                .stream()
+                .map(candidateDocumentService::mapToResponseWithUrl)
+                .toList();
+    }
 
     // ══════════════════════════════════════════════════════════════
     // QUEUE VIEW (GRID)
@@ -47,6 +60,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
     public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
 
         // Fetch unlocked candidates who are waiting for document verification
@@ -59,16 +73,13 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
                 .toList();
     }
 
-
-    // ══════════════════════════════════════════════════════════════
     // 1. QUEUE & CLAIM LOGIC
-    // ══════════════════════════════════════════════════════════════
-
     /**
      * MANUAL PULL: Officer clicks a specific candidate in the grid to lock and claim them.
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public void claimCandidateForVerification(Long candidateId, Long officerId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -85,6 +96,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
      */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public CandidateVerificationDashboardDto claimNextAvailableCandidate(Long officerId) {
         Candidate nextCandidate = candidateRepository
                 .findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus.DOCUMENTS_UPLOADED)
@@ -95,15 +107,13 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         return getCandidateVerificationDetails(nextCandidate.getId());
     }
 
-    // ══════════════════════════════════════════════════════════════
     // 2. DASHBOARD VIEW (MAPSTRUCT)
-    // ══════════════════════════════════════════════════════════════
-
     /**
      * Fetches the candidate profile AND documents into a single JSON payload.
      */
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('DOC_VIEW_DETAILS')")
     public CandidateVerificationDashboardDto getCandidateVerificationDetails(Long candidateId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with ID: " + candidateId));
@@ -116,12 +126,10 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         return officerCandidateMapper.toDashboardDto(candidate, documents);
     }
 
-    // ══════════════════════════════════════════════════════════════
     // 3. DOCUMENT VERIFICATION LOGIC
-    // ══════════════════════════════════════════════════════════════
-
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_APPROVE')")
     public void approveDocument(Long documentId, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
         validateLockOwnership(document.getCandidate(), officerId);
@@ -143,6 +151,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('DOC_REJECT')")
     public void rejectDocument(Long documentId, String reason, Long officerId) {
         CandidateDocument document = getDocumentById(documentId);
         validateLockOwnership(document.getCandidate(), officerId);
@@ -177,10 +186,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         eventPublisher.publishEvent(event);
     }
 
-    // ══════════════════════════════════════════════════════════════
     // PRIVATE HELPER METHODS
-    // ══════════════════════════════════════════════════════════════
-
     private void lockCandidate(Candidate candidate, Long officerId) {
         candidate.setVerificationLockedBy(officerId);
         candidate.setVerificationLockedAt(Instant.now());
@@ -216,12 +222,9 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
             log.info("Candidate ID {} has all documents verified. Ready for Screening Engine.", candidateId);
 
-            // Trigger the Screening Engine!
+            eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
 
             screeningOrchestrationService.runScreening(candidateId);
-
-            eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
-//runScreening will be triggered by a listener in your Screening Orchestration Service, which will then kick off the screening process for this candidate.
         }
     }
 }
