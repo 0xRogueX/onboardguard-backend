@@ -1,7 +1,9 @@
 package com.onboardguard.screening.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Flat snapshot of a candidate's data passed to the screening engine.
@@ -10,6 +12,8 @@ import lombok.Getter;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CandidateScreeningData {
 
     private Long   candidateId;
