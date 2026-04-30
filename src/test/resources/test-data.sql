@@ -20,8 +20,8 @@ INSERT INTO users (
     updated_at,
     version
 ) VALUES
-    ('dev.vivek.dadhaniya@gmail.com', 'Vivek Dadhaniya', '+911005550001', '$2a$12$f2rXDoQMZARDYQpgir7/cOBaPrNgGdzSw/j0z6S539CPpbTYdpPxC', 'ROLE_SUPER_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
-    ('vrundachavda112@gmail.com', 'Vrunda Chavda', '+911005550002', '$2a$12$f2rXDoQMZARDYQpgir7/cOBaPrNgGdzSw/j0z6S539CPpbTYdpPxC', 'ROLE_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
+    ('dev.vivek.dadhaniya@gmail.com', 'Vivek Dadhaniya', '+911005550001', '$2a$12$PdA6xMe0kWghPV6BWF3K..Mtv0OvqbYHk1r.vbsJX.QxAf6YcbZqu', 'ROLE_SUPER_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0),
+    ('vrundachavda112@gmail.com', 'Vrunda Chavda', '+911005550002', '$2a$12$PdA6xMe0kWghPV6BWF3K..Mtv0OvqbYHk1r.vbsJX.QxAf6YcbZqu', 'ROLE_ADMIN', true, false, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 0);
 
 -- 1. Seed Sources
 INSERT INTO watchlist_sources (id, code, name, type, credibility_weight, active, created_at, updated_at, version)

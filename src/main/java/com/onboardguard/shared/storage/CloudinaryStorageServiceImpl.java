@@ -24,7 +24,7 @@ public class CloudinaryStorageServiceImpl implements CloudStorageService {
 
     private static final String NOT_FOUND_MESSAGE = "not found";
 
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     private static final List<String> ALLOWED_CONTENT_TYPES = List.of(
             "application/pdf",
             "image/jpeg",
@@ -49,7 +49,7 @@ public class CloudinaryStorageServiceImpl implements CloudStorageService {
             throw new StorageValidationException("File must not be null or empty");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new StorageValidationException("File exceeds the 5MB maximum size limit.");
+            throw new StorageValidationException("File exceeds the 10MB maximum size limit.");
         }
         validateContentType(file.getContentType());
     }

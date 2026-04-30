@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,11 +23,17 @@ public class ObjectStorageConfig {
 
     @Bean
     public Cloudinary cloudinary() {
-        Map<String, String> config = new HashMap<>();
+        if (!StringUtils.hasText(cloudName) || !StringUtils.hasText(apiKey) || !StringUtils.hasText(apiSecret)) {
+            throw new IllegalStateException("Cloudinary configuration is missing. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.");
+        }
+
+        Map<String, Object> config = new HashMap<>();
         config.put("cloud_name", cloudName);
         config.put("api_key",    apiKey);
         config.put("api_secret", apiSecret);
         config.put("secure",     "true");
+        config.put("connect_timeout", 10000);
+        config.put("read_timeout", 30000);
 
         return new Cloudinary(config);
     }
