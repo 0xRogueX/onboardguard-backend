@@ -17,6 +17,12 @@ import java.util.Optional;
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
 
+    // FOR MANUAL CLAIM CONCURRENCY SAFETY
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
+    @Query("SELECT a FROM Alert a WHERE a.id = :alertId")
+    Optional<Alert> findByIdForUpdate(@Param("alertId") Long alertId);
+
     /**
      * PULL QUEUE: Finds the oldest OPEN alert based on SLA deadline.
      * * @Lock(PESSIMISTIC_WRITE) issues a SELECT ... FOR UPDATE.

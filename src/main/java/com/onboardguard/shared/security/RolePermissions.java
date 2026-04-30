@@ -30,18 +30,22 @@ public final class RolePermissions {
     public static final String DOC_VERIFY          = "DOC_VERIFY";
 
     // ============================================================
-    // ALERT PERMISSIONS (NEW - IMPORTANT)
+    // ALERT PERMISSIONS
     // ============================================================
     public static final String ALERT_VIEW                  = "ALERT_VIEW";
     public static final String ALERT_CLAIM                 = "ALERT_CLAIM";
     public static final String ALERT_DISMISS               = "ALERT_DISMISS";
     public static final String ALERT_CONVERT_TO_CASE       = "ALERT_CONVERT_TO_CASE";
 
+    public static final String SCREENING_CANDIDATE         = "SCREENING_CANDIDATE";
+
     // ============================================================
     // CASE PERMISSIONS
     // ============================================================
     public static final String CASE_VIEW                   = "CASE_VIEW";
+    public static final String CASE_VIEW_ESCALATED         = "CASE_VIEW_ESCALATED";
     public static final String CASE_CREATE                 = "CASE_CREATE";
+    public static final String CASE_CLAIM                  = "CASE_CLAIM";
     public static final String CASE_ADD_NOTE               = "CASE_ADD_NOTE";
     public static final String CASE_UPDATE_STATUS          = "CASE_UPDATE_STATUS";
     public static final String CASE_ESCALATE               = "CASE_ESCALATE";
@@ -91,148 +95,68 @@ public final class RolePermissions {
     public static Set<String> getPermissions(RoleCode role) {
         return switch (role) {
 
-            // =========================
-            // CANDIDATE
-            // =========================
             case ROLE_CANDIDATE -> Set.of(
                     CANDIDATE_FORM_SUBMIT,
                     CANDIDATE_DOC_UPLOAD,
                     CANDIDATE_STATUS_VIEW_OWN
             );
 
-            // =========================
-            // OFFICER L1 (MAKER)
-            // =========================
             case ROLE_OFFICER_L1 -> Set.of(
-                    // ALERTS (FULL CONTROL)
-                    ALERT_VIEW,
-                    ALERT_CLAIM,
-                    ALERT_DISMISS,
-                    ALERT_CONVERT_TO_CASE,
+                    ALERT_VIEW, ALERT_CLAIM, ALERT_DISMISS, ALERT_CONVERT_TO_CASE,
 
-                    // CASES
                     CASE_VIEW,
                     CASE_CREATE,
+                    CASE_CLAIM,
                     CASE_ADD_NOTE,
                     CASE_UPDATE_STATUS,
                     CASE_ESCALATE,
+                    // Note: L1 explicitly does NOT get CASE_VIEW_ESCALATED
 
-                    // DOCUMENTS
-                    DOC_QUEUE_VIEW,
-                    DOC_CLAIM,
-                    DOC_VIEW_DETAILS,
-                    DOC_APPROVE,
-                    DOC_REJECT,
-                    DOC_VERIFY,
-
-                    // WATCHLIST
-                    WATCHLIST_VIEW,
-                    WATCHLIST_EVIDENCE_VIEW
+                    DOC_QUEUE_VIEW, DOC_CLAIM, DOC_VIEW_DETAILS, DOC_APPROVE, DOC_REJECT, DOC_VERIFY,
+                    SCREENING_CANDIDATE,
+                    WATCHLIST_VIEW, WATCHLIST_EVIDENCE_VIEW
             );
 
-            // =========================
-            // OFFICER L2 (CHECKER)
-            // =========================
             case ROLE_OFFICER_L2 -> Set.of(
-                    // ALERTS (READ ONLY)
                     ALERT_VIEW,
 
-                    // CASES (FULL RESOLUTION)
                     CASE_VIEW,
+                    CASE_VIEW_ESCALATED, // 🔥 ADDED HERE
                     CASE_CREATE,
+                    CASE_CLAIM,
                     CASE_ADD_NOTE,
                     CASE_UPDATE_STATUS,
                     CASE_ESCALATE,
                     CASE_RESOLVE,
 
-                    // DOCUMENTS
-                    DOC_QUEUE_VIEW,
-                    DOC_CLAIM,
-                    DOC_VIEW_DETAILS,
-                    DOC_APPROVE,
-                    DOC_REJECT,
-                    DOC_VERIFY,
-
-                    // WATCHLIST
-                    WATCHLIST_VIEW,
-                    WATCHLIST_EVIDENCE_VIEW
+                    DOC_QUEUE_VIEW, DOC_CLAIM, DOC_VIEW_DETAILS, DOC_APPROVE, DOC_REJECT, DOC_VERIFY,
+                    WATCHLIST_VIEW, WATCHLIST_EVIDENCE_VIEW
             );
 
-            // =========================
-            // ADMIN
-            // =========================
             case ROLE_ADMIN -> Set.of(
-                    // ALERTS
-                    ALERT_VIEW,
-                    ALERT_CLAIM,
-                    ALERT_DISMISS,
-                    ALERT_CONVERT_TO_CASE,
+                    ALERT_VIEW, ALERT_CLAIM, ALERT_DISMISS, ALERT_CONVERT_TO_CASE,
 
-                    // CASES
-                    CASE_VIEW,
-                    CASE_CREATE,
-                    CASE_ADD_NOTE,
-                    CASE_UPDATE_STATUS,
-                    CASE_ESCALATE,
-                    CASE_RESOLVE,
-                    CASE_ASSIGN_OFFICER,
+                    CASE_VIEW, CASE_VIEW_ESCALATED, CASE_CREATE, CASE_CLAIM, CASE_ADD_NOTE,
+                    CASE_UPDATE_STATUS, CASE_ESCALATE, CASE_RESOLVE, CASE_ASSIGN_OFFICER,
 
-                    // DOCUMENTS
-                    DOC_QUEUE_VIEW,
-                    DOC_CLAIM,
-                    DOC_VIEW_DETAILS,
-                    DOC_APPROVE,
-                    DOC_REJECT,
-                    DOC_VERIFY,
-
-                    // WATCHLIST
-                    WATCHLIST_VIEW,
-                    WATCHLIST_EVIDENCE_VIEW,
-                    WATCHLIST_CREATE,
-                    WATCHLIST_EDIT,
-                    WATCHLIST_SOFT_DELETE,
-
-                    // USERS
-                    USER_CREATE,
-                    USER_VIEW_ALL,
-                    USER_ACTIVATE_DEACTIVATE,
-
-                    // SYSTEM
-                    SCREENING_CONFIG_SWITCH,
-                    SCREENING_RESCREEN,
-                    REPORTS_VIEW,
-                    AUDIT_LOG_VIEW,
-                    SYSTEM_CONFIG_MANAGE,
-
+                    DOC_QUEUE_VIEW, DOC_CLAIM, DOC_VIEW_DETAILS, DOC_APPROVE, DOC_REJECT, DOC_VERIFY,
+                    WATCHLIST_VIEW, WATCHLIST_EVIDENCE_VIEW, WATCHLIST_CREATE, WATCHLIST_EDIT, WATCHLIST_SOFT_DELETE,
+                    USER_CREATE, USER_VIEW_ALL, USER_ACTIVATE_DEACTIVATE,
+                    SCREENING_CONFIG_SWITCH, SCREENING_RESCREEN, REPORTS_VIEW, AUDIT_LOG_VIEW, SYSTEM_CONFIG_MANAGE,
                     APPROVAL_CREATE
             );
 
-            // =========================
-            // SUPER ADMIN
-            // =========================
             case ROLE_SUPER_ADMIN -> Set.of(
                     ALERT_VIEW, ALERT_CLAIM, ALERT_DISMISS, ALERT_CONVERT_TO_CASE,
 
-                    CASE_VIEW, CASE_CREATE, CASE_ADD_NOTE,
-                    CASE_UPDATE_STATUS, CASE_ESCALATE, CASE_RESOLVE,
-                    CASE_ASSIGN_OFFICER,
+                    CASE_VIEW, CASE_VIEW_ESCALATED, CASE_CREATE, CASE_CLAIM, CASE_ADD_NOTE,
+                    CASE_UPDATE_STATUS, CASE_ESCALATE, CASE_RESOLVE, CASE_ASSIGN_OFFICER,
 
-                    DOC_QUEUE_VIEW, DOC_CLAIM, DOC_VIEW_DETAILS,
-                    DOC_APPROVE, DOC_REJECT, DOC_VERIFY,
-
-                    WATCHLIST_VIEW, WATCHLIST_EVIDENCE_VIEW,
-                    WATCHLIST_CREATE, WATCHLIST_EDIT, WATCHLIST_SOFT_DELETE,
-
+                    DOC_QUEUE_VIEW, DOC_CLAIM, DOC_VIEW_DETAILS, DOC_APPROVE, DOC_REJECT, DOC_VERIFY,
+                    WATCHLIST_VIEW, WATCHLIST_EVIDENCE_VIEW, WATCHLIST_CREATE, WATCHLIST_EDIT, WATCHLIST_SOFT_DELETE,
                     USER_CREATE, USER_VIEW_ALL, USER_ACTIVATE_DEACTIVATE,
-
-                    SCREENING_CONFIG_SWITCH, SCREENING_RESCREEN,
-                    REPORTS_VIEW, AUDIT_LOG_VIEW,
-                    SYSTEM_CONFIG_MANAGE,
-
-                    APPROVAL_CREATE,
-                    APPROVAL_APPROVE_REJECT,
-                    APPROVAL_BYPASS,
-                    ROLE_MANAGE
+                    SCREENING_CONFIG_SWITCH, SCREENING_RESCREEN, REPORTS_VIEW, AUDIT_LOG_VIEW, SYSTEM_CONFIG_MANAGE,
+                    APPROVAL_CREATE, APPROVAL_APPROVE_REJECT, APPROVAL_BYPASS, ROLE_MANAGE
             );
         };
     }

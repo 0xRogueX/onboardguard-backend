@@ -123,3 +123,52 @@ VALUES
 SELECT setval(pg_get_serial_sequence('watchlist_entries', 'id'), coalesce(max(id), 1)) FROM watchlist_entries;
 SELECT setval(pg_get_serial_sequence('watchlist_sources', 'id'), coalesce(max(id), 1)) FROM watchlist_sources;
 SELECT setval(pg_get_serial_sequence('watchlist_categories', 'id'), coalesce(max(id), 1)) FROM watchlist_categories;
+
+
+
+-- ==============================================================================
+-- SYSTEM CONFIGURATION INITIAL DATA
+-- ==============================================================================
+
+-- Delete existing to ensure a clean start for the new schema
+DELETE FROM system_config;
+
+-- SCREENING THRESHOLDS
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('SCREENING_THRESHOLD_FUZZY', '0.80', 'DOUBLE', 'SCREENING', 'Threshold for Jaro-Winkler similarity (0.0 to 1.0)', false, NOW(), NOW(), 0),
+	('SCREENING_THRESHOLD_MEDIUM', '31.0', 'DOUBLE', 'SCREENING', 'Score threshold to classify as MEDIUM risk', false, NOW(), NOW(), 0),
+	('SCREENING_THRESHOLD_HIGH', '61.0', 'DOUBLE', 'SCREENING', 'Score threshold to classify as HIGH risk', false, NOW(), NOW(), 0);
+
+-- SCREENING MULTIPLIERS (Corroboration)
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('SCREENING_MULT_NAME_ONLY', '0.5', 'DOUBLE', 'SCREENING', 'Multiplier when only name matches', false, NOW(), NOW(), 0),
+	('SCREENING_MULT_NAME_ONE_ID', '0.8', 'DOUBLE', 'SCREENING', 'Multiplier when name and one ID match', false, NOW(), NOW(), 0),
+	('SCREENING_MULT_NAME_TWO_IDS', '1.0', 'DOUBLE', 'SCREENING', 'Multiplier when name and two IDs match', false, NOW(), NOW(), 0),
+	('SCREENING_MULT_NAME_ORG', '0.75', 'DOUBLE', 'SCREENING', 'Multiplier when name and organization match', false, NOW(), NOW(), 0),
+	('SCREENING_MULT_NAME_ORG_DESIGNATION', '1.0', 'DOUBLE', 'SCREENING', 'Multiplier when name, org, and designation match', false, NOW(), NOW(), 0);
+
+-- SCREENING BONUSES
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('SCREENING_BONUS_CRIMINAL', '15.0', 'DOUBLE', 'SCREENING', 'Bonus points for Criminal category matches', false, NOW(), NOW(), 0),
+	('SCREENING_BONUS_PEP', '15.0', 'DOUBLE', 'SCREENING', 'Bonus points for PEP category matches', false, NOW(), NOW(), 0),
+	('SCREENING_BONUS_SEVERITY_HIGH', '10.0', 'DOUBLE', 'SCREENING', 'Bonus points for High Severity entries', false, NOW(), NOW(), 0);
+
+-- FEATURE TOGGLES
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('ACTIVE_SCREENING_STRATEGY', 'ADVANCED', 'STRING', 'SCREENING', 'Current active screening engine strategy (BASIC/ADVANCED)', false, NOW(), NOW(), 0),
+	('SCREENING_AUTO_REJECT_ENABLED', 'false', 'BOOLEAN', 'SCREENING', 'Whether to automatically reject candidates with HIGH risk score', false, NOW(), NOW(), 0);
+
+-- STORAGE & AUTH
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('STORAGE_PRESIGNED_URL_TTL_MINUTES', '15', 'INTEGER', 'STORAGE', 'TTL for Cloudinary/S3 presigned URLs in minutes', false, NOW(), NOW(), 0),
+	('AUTH_JWT_EXPIRATION_MS', '900000', 'INTEGER', 'SYSTEM', 'JWT token expiration time in milliseconds (default 15m)', false, NOW(), NOW(), 0);
+
+-- SLA & BUSINESS RULES
+INSERT INTO system_config (config_key, config_value, config_type, category, description, is_sensitive, created_at, updated_at, version)
+VALUES
+	('SLA_HOURS', '48', 'INTEGER', 'BUSINESS', 'SLA for officer to review a flagged screening', false, NOW(), NOW(), 0);

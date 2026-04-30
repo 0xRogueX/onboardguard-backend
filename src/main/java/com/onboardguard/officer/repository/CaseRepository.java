@@ -25,8 +25,11 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     """)
     int markBreachedCases(@Param("resolvedStatus") CaseStatus resolvedStatus,
                           @Param("now") Instant now);
+    
 
-    // L1 QUEUE -> only fresh cases
+    // QUEUE DASHBOARD QUERIES (Read-Only)
+
+    // L1 QUEUE -> only fresh OPEN cases that nobody has claimed
     @Query("""
         SELECT c FROM Case c
         WHERE c.status = :status
@@ -35,7 +38,7 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     """)
     List<Case> findAvailableCasesForQueue(@Param("status") CaseStatus status);
 
-    // L2 QUEUE -> only escalated
+    // L2 QUEUE -> only ESCALATED cases that nobody has claimed
     @Query("""
         SELECT c FROM Case c
         WHERE c.status = :status
@@ -44,16 +47,27 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     """)
     List<Case> findEscalatedCasesForL2Queue(@Param("status") CaseStatus status);
 
-    // LOCKED CLAIM
+
+    // CLAIM QUERIES (Pessimistic Locking to prevent double-assignment)
+
+    // MANUAL CLAIM (L1 & L2 By ID)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
+    @Query("SELECT c FROM Case c WHERE c.id = :caseId")
+    Optional<Case> findByIdForUpdate(@Param("caseId") Long caseId);
+
+    // FIFO CLAIM (L1 - Finds oldest OPEN case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
         SELECT c FROM Case c
-        WHERE c.id = :caseId
+        WHERE c.status = :status
+        AND c.assignedOfficerId IS NULL
+        ORDER BY c.createdAt ASC
     """)
-    Optional<Case> findByIdForUpdate(@Param("caseId") Long caseId);
+    Optional<Case> findFirstNextOpenCaseForUpdate(@Param("status") CaseStatus status);
 
-    // FIFO CLAIM (L2)
+    // FIFO CLAIM (L2 - Finds oldest ESCALATED case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
@@ -62,5 +76,5 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
         AND c.assignedOfficerId IS NULL
         ORDER BY c.escalatedAt ASC
     """)
-    Optional<Case> findNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
+    Optional<Case> findFirstNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
 }

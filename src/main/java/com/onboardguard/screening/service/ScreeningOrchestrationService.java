@@ -3,6 +3,7 @@ package com.onboardguard.screening.service;
 
 import com.onboardguard.candidate.entity.Candidate;
 import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.officer.service.AlertService;
 import com.onboardguard.screening.dto.CandidateScreeningData;
 import com.onboardguard.screening.dto.MatchDetailDto;
 import com.onboardguard.screening.dto.ScreeningResultDto;
@@ -13,6 +14,7 @@ import com.onboardguard.screening.enums.ScreeningStatus;
 import com.onboardguard.screening.mapper.ScreeningMapper;
 import com.onboardguard.screening.repository.ScreeningResultRepository;
 import com.onboardguard.screening.strategy.ScreeningStrategy;
+import com.onboardguard.shared.config.ConfigConstants;
 import com.onboardguard.shared.config.service.SystemConfigService;
 import com.onboardguard.watchlist.repository.WatchlistEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,7 +42,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ScreeningOrchestrationService {
 
-    private static final String KEY_ACTIVE_STRATEGY = "screening.active.strategy";
 
     private final Map<String, ScreeningStrategy> strategyMap;
 
@@ -50,9 +51,10 @@ public class ScreeningOrchestrationService {
     private final SystemConfigService systemConfigService;
     private final RiskScoringEngine riskScoringEngine;
     private final ScreeningMapper screeningMapper;
+    private final AlertService alertService;
 
     @Transactional
-    @PreAuthorize("hasAuthority('SCREENING_RESCREEN')")
+    @PreAuthorize("hasAnyAuthority('SCREENING_RESCREEN','SCREENING_CANDIDATE')")
     public ScreeningResultDto runScreening(Long candidateId) {
         log.info("Screening triggered for candidateId={}", candidateId);
 
@@ -100,11 +102,11 @@ public class ScreeningOrchestrationService {
             candidate.setScreeningStatus(newStatus);
             candidateRepository.save(candidate);
 
-            // 10. Trigger alert if MEDIUM or HIGH (Alert Module missing)
-            // if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
-            //         || resultDto.getRiskLevel() == RiskLevel.HIGH) {
-            //     alertService.createAlert(savedResult);
-            // }
+            // 10. Trigger alert if MEDIUM or HIGH — NOW ACTIVE!
+            if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
+                    || resultDto.getRiskLevel() == RiskLevel.HIGH) {
+                alertService.createAlert(savedResult);
+            }
 
             log.info("Screening complete candidateId={} score={} level={}",
                     candidateId, resultDto.getRiskScore(), resultDto.getRiskLevel());
@@ -122,12 +124,15 @@ public class ScreeningOrchestrationService {
         }
     }
 
-    // Dynamic DI
+    // Dynamic DI — Read active strategy from SystemConfig
     private ScreeningStrategy resolveActiveStrategy() {
-        String configured = systemConfigService.getString(KEY_ACTIVE_STRATEGY);
-        if (configured == null) configured = "basic";
+        String configured = systemConfigService.getString(
+                ConfigConstants.ACTIVE_SCREENING_STRATEGY,
+                ConfigConstants.Defaults.ACTIVE_STRATEGY);
+
         String beanName = configured.toLowerCase() + "ScreeningStrategy";
         ScreeningStrategy strategy = strategyMap.get(beanName);
+
         if (strategy == null) {
             log.warn("Unknown strategy '{}' — falling back to BASIC", configured);
             strategy = strategyMap.get("basicScreeningStrategy");
@@ -144,7 +149,7 @@ public class ScreeningOrchestrationService {
                         .riskScore(0.0)
                         .riskLevel(RiskLevel.LOW)
                         .status(ScreeningStatus.PENDING)
-                        // Threshold snapshots captured NOW — immutable from this point
+                        // Threshold snapshots captured NOW - immutable from this point
                         .mediumThresholdSnapshot(riskScoringEngine.getMediumThreshold())
                         .highThresholdSnapshot(riskScoringEngine.getHighThreshold())
                         .fuzzyThresholdSnapshot(riskScoringEngine.getFuzzyThreshold())
@@ -163,7 +168,7 @@ public class ScreeningOrchestrationService {
             // Mapper handles all field + snapshot mapping
             ScreeningMatch match = screeningMapper.toScreeningMatchEntity(dto);
 
-            // watchlistEntry is ignored by mapper — set manually via proxy (no extra SELECT)
+            // watchlistEntry is ignored by mapper - set manually via proxy (no extra SELECT)
             match.setWatchlistEntry(
                     watchlistEntryRepository.getReferenceById(dto.getWatchlistEntryId()));
 

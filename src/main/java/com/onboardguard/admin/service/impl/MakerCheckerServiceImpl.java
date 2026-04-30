@@ -13,13 +13,13 @@ import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.auth.repository.AppUserRepository;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
+import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.config.entity.SystemConfig;
 import com.onboardguard.shared.config.repository.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
