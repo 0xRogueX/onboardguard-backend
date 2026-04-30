@@ -70,6 +70,9 @@ public class Case {
     private Instant resolvedAt;
 
     // Escalation Tracking
+    @Column(name = "escalated_by")
+    private Long escalatedBy; // Permanently records the L1 Officer
+
     @Column(name = "escalated_to")
     private Long escalatedTo; // L2 Officer ID
 
