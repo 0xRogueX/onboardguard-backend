@@ -62,7 +62,9 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto acknowledgeAlert(Long alertId, Long officerId){
-        Alert alert = getAlertById(alertId);
+        
+        Alert alert = alertRepository.findByIdForUpdate(alertId)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
 
         if(alert.getStatus() != AlertStatus.OPEN){
             throw new BadRequestException("Only OPEN alerts can be acknowledged.");
