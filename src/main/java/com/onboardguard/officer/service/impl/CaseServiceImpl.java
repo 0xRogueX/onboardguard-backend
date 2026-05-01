@@ -10,12 +10,12 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,16 +31,13 @@ public class CaseServiceImpl implements CaseService {
     private final CaseRepository caseRepository;
     private final CaseMapper caseMapper;
     private final SecurityUtils securityUtils;
-    private final ApplicationEventPublisher eventPublisher;
 
     // 1. DASHBOARD QUEUES
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CASE_VIEW')")
     public List<CaseDetailDto> getAvailableCasesForQueue() {
-        // Include both globally unassigned OPEN cases and cases already assigned to the current officer
-        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
-        return caseRepository.findAvailableCasesForQueueIncludingOwned(CaseStatus.OPEN, currentOfficerId)
+        return caseRepository.findAvailableCasesForQueue(CaseStatus.OPEN)
                 .stream()
                 .map(caseMapper::toDto)
                 .toList();
@@ -79,10 +76,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.OPEN) {
-            throw new IllegalStateException("Only OPEN cases can be claimed.");
+            throw new BadRequestException("Only OPEN cases can be claimed.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("This case is already claimed by another officer.");
         }
 
         // State Transition
@@ -98,7 +95,7 @@ public class CaseServiceImpl implements CaseService {
     @Transactional
     @PreAuthorize("hasAuthority('CASE_CLAIM')")
     public CaseDetailDto claimNextOpenCaseFifo(Long l1OfficerId) {
-        Case investigationCase = caseRepository.findFirstNextOpenCaseForUpdate(CaseStatus.OPEN)
+        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByCreatedAtAsc(CaseStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No open cases available in the queue."));
 
         // State Transition
@@ -117,7 +114,7 @@ public class CaseServiceImpl implements CaseService {
         Case investigationCase = getCaseById(caseId);
 
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
-            throw new IllegalStateException("Only IN_REVIEW cases can be escalated.");
+            throw new BadRequestException("Only IN_REVIEW cases can be escalated.");
         }
         validateCaseOwnership(investigationCase, l1OfficerId);
 
@@ -151,10 +148,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Only ESCALATED cases can be claimed by an L2 Checker.");
+            throw new BadRequestException("Only ESCALATED cases can be claimed by an L2 Checker.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("This case is already claimed by another officer.");
         }
 
         // Lock to L2 Officer (stays ESCALATED, but drops off dashboard due to ID assignment)
@@ -168,7 +165,7 @@ public class CaseServiceImpl implements CaseService {
     @Transactional
     @PreAuthorize("hasAuthority('CASE_RESOLVE')")
     public CaseDetailDto claimNextEscalatedCaseFifo(Long l2OfficerId) {
-        Case investigationCase = caseRepository.findFirstNextEscalatedCaseForUpdate(CaseStatus.ESCALATED)
+        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(CaseStatus.ESCALATED)
                 .orElseThrow(() -> new ResourceNotFoundException("No escalated cases available in the queue."));
 
         investigationCase.setAssignedOfficerId(l2OfficerId);
@@ -185,7 +182,7 @@ public class CaseServiceImpl implements CaseService {
         Case investigationCase = getCaseById(caseId);
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Case must be in ESCALATED state to be resolved.");
+            throw new BadRequestException("Case must be in ESCALATED state to be resolved.");
         }
         validateCaseOwnership(investigationCase, l2OfficerId);
 

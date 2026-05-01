@@ -2,7 +2,6 @@ package com.onboardguard.officer.service.impl;
 
 
 import com.onboardguard.candidate.entity.Candidate;
-import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.officer.dto.AlertDetailDto;
 import com.onboardguard.officer.entity.Alert;
 import com.onboardguard.officer.entity.Case;
@@ -43,7 +42,6 @@ public class AlertServiceImpl implements AlertService {
     private final AlertRepository alertRepository;
     private final CaseRepository caseRepository;
     private final AlertMapper alertMapper;
-    private final CandidateRepository candidateRepository;
     private final SystemConfigService systemConfigService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -67,7 +65,7 @@ public class AlertServiceImpl implements AlertService {
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
 
         if(alert.getStatus() != AlertStatus.OPEN){
-            throw new BadRequestException("Only OPEN alerts can be acknowledged.");
+            throw new BadRequestException("This alert is already claimed by another officer or no longer open.");
         }
 
         alert.setStatus(AlertStatus.IN_REVIEW);  // for locking the alert when it is reviewing by an officer , so that other officer can’t be able to see that  same alert
@@ -252,7 +250,7 @@ public class AlertServiceImpl implements AlertService {
      */
     private void validateAlertOwnership(Alert alert, Long officerId) {
         if (alert.getStatus() != AlertStatus.IN_REVIEW) {
-            throw new IllegalStateException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
+            throw new BadRequestException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
         }
 
         if (!officerId.equals(alert.getAcknowledgedBy())) {

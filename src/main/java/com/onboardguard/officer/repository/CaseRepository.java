@@ -38,15 +38,6 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     """)
     List<Case> findAvailableCasesForQueue(@Param("status") CaseStatus status);
 
-    // L1 queue: include cases that are either unassigned or already assigned to the requesting officer
-    @Query("""
-        SELECT c FROM Case c
-        WHERE c.status = :status
-        AND (c.assignedOfficerId IS NULL OR c.assignedOfficerId = :officerId)
-        ORDER BY c.createdAt ASC
-    """)
-    List<Case> findAvailableCasesForQueueIncludingOwned(@Param("status") CaseStatus status,
-                                                       @Param("officerId") Long officerId);
 
     // L2 QUEUE -> only ESCALATED cases that nobody has claimed
     @Query("""
@@ -69,22 +60,10 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     // FIFO CLAIM (L1 - Finds oldest OPEN case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    @Query("""
-        SELECT c FROM Case c
-        WHERE c.status = :status
-        AND c.assignedOfficerId IS NULL
-        ORDER BY c.createdAt ASC
-    """)
-    Optional<Case> findFirstNextOpenCaseForUpdate(@Param("status") CaseStatus status);
+    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByCreatedAtAsc(CaseStatus status);
 
     // FIFO CLAIM (L2 - Finds oldest ESCALATED case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    @Query("""
-        SELECT c FROM Case c
-        WHERE c.status = :status
-        AND c.assignedOfficerId IS NULL
-        ORDER BY c.escalatedAt ASC
-    """)
-    Optional<Case> findFirstNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
+    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(CaseStatus status);
 }
