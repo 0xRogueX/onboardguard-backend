@@ -38,7 +38,8 @@ public class CaseServiceImpl implements CaseService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CASE_VIEW')")
     public List<CaseDetailDto> getAvailableCasesForQueue() {
-        return caseRepository.findAvailableCasesForQueue(CaseStatus.OPEN)
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+        return caseRepository.findAvailableCasesForQueue(CaseStatus.OPEN, CaseStatus.IN_REVIEW, currentOfficerId)
                 .stream()
                 .map(caseMapper::toDto)
                 .toList();
@@ -48,7 +49,8 @@ public class CaseServiceImpl implements CaseService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CASE_VIEW_ESCALATED')")
     public List<CaseDetailDto> getEscalatedCasesQueue() {
-        return caseRepository.findEscalatedCasesForL2Queue(CaseStatus.ESCALATED)
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+        return caseRepository.findEscalatedCasesForL2Queue(CaseStatus.ESCALATED, currentOfficerId)
                 .stream()
                 .map(caseMapper::toDto)
                 .toList();

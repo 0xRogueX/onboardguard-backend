@@ -22,16 +22,21 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     /**
      * GET NEXT CANDIDATE (FIFO Queue with SKIP LOCKED):
      * Finds the oldest candidate waiting for document verification that is not currently locked.
-     * This ensures multiple officers can pull from the queue simultaneously without database blocking.
+     * Accepts candidates in FORM_SUBMITTED status (set when candidate clicks "Submit Application").
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    Optional<Candidate> findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus status);
+    @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
+    Optional<Candidate> findFirstAvailableForVerification(@Param("statuses") List<OnboardingStatus> statuses);
 
     /**
-     * Fetches candidates waiting for verification who are NOT currently locked by anyone.
-     * Ordered by oldest first so SLAs are met.
+     * GET QUEUE VIEW (Grid):
+     * Fetches all candidates who have submitted their form and are NOT currently locked by any officer.
+     * This is what populates the officer's "Candidate Queue" grid.
+     *
+     * Includes FORM_SUBMITTED (just submitted) and DOCUMENTS_UNDER_REVIEW with no lock
+     * (e.g., officer abandoned without finishing).
      */
-    @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus = :status AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
-    List<Candidate> findAvailableCandidatesForVerification(@Param("status") OnboardingStatus status);
+    @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
+    List<Candidate> findAvailableCandidatesForVerification(@Param("statuses") List<OnboardingStatus> statuses);
 }

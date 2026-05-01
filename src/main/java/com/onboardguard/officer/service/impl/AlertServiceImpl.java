@@ -123,6 +123,12 @@ public class AlertServiceImpl implements AlertService {
     public Long convertToCase(Long alertId, Long officerId){
        Alert alert = getAlertById(alertId);
 
+       if (alert.getStatus() == AlertStatus.OPEN) {
+           alert.setStatus(AlertStatus.IN_REVIEW);
+           alert.setAcknowledgedBy(officerId);
+           alert.setAcknowledgedAt(Instant.now());
+       }
+
        validateAlertOwnership(alert, officerId);
 
        alert.setStatus(AlertStatus.CONVERTED_TO_CASE);

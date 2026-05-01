@@ -99,7 +99,12 @@ public class CandidateDocumentServiceImpl {
 
         document = documentRepository.save(document);
 
-        if (candidate.getOnboardingStatus() == OnboardingStatus.PROFESSIONAL_SAVED) {
+        // Advance status to DOCUMENTS_UPLOADED:
+        // - First upload: PROFESSIONAL_SAVED → DOCUMENTS_UPLOADED
+        // - Re-upload after rejection: DOCUMENTS_REJECTED → DOCUMENTS_UPLOADED
+        OnboardingStatus currentStatus = candidate.getOnboardingStatus();
+        if (currentStatus == OnboardingStatus.PROFESSIONAL_SAVED
+                || currentStatus == OnboardingStatus.DOCUMENTS_REJECTED) {
             candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_UPLOADED);
             candidateRepository.save(candidate);
         }
