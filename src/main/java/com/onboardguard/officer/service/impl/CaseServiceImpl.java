@@ -38,7 +38,9 @@ public class CaseServiceImpl implements CaseService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CASE_VIEW')")
     public List<CaseDetailDto> getAvailableCasesForQueue() {
-        return caseRepository.findAvailableCasesForQueue(CaseStatus.OPEN)
+        // Include both globally unassigned OPEN cases and cases already assigned to the current officer
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+        return caseRepository.findAvailableCasesForQueueIncludingOwned(CaseStatus.OPEN, currentOfficerId)
                 .stream()
                 .map(caseMapper::toDto)
                 .toList();

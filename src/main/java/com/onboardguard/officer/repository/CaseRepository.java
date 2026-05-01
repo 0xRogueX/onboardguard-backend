@@ -38,6 +38,16 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     """)
     List<Case> findAvailableCasesForQueue(@Param("status") CaseStatus status);
 
+    // L1 queue: include cases that are either unassigned or already assigned to the requesting officer
+    @Query("""
+        SELECT c FROM Case c
+        WHERE c.status = :status
+        AND (c.assignedOfficerId IS NULL OR c.assignedOfficerId = :officerId)
+        ORDER BY c.createdAt ASC
+    """)
+    List<Case> findAvailableCasesForQueueIncludingOwned(@Param("status") CaseStatus status,
+                                                       @Param("officerId") Long officerId);
+
     // L2 QUEUE -> only ESCALATED cases that nobody has claimed
     @Query("""
         SELECT c FROM Case c
