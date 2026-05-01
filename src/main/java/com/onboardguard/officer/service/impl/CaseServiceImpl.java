@@ -114,20 +114,28 @@ public class CaseServiceImpl implements CaseService {
     @Transactional
     @PreAuthorize("hasAuthority('CASE_ESCALATE')")
     public void escalateCase(Long caseId, EscalateCaseDto dto, Long l1OfficerId) {
+        log.debug("Escalate Case: Starting escalation for Case ID = {}, L1 Officer ID = {}", caseId, l1OfficerId);
+
         Case investigationCase = getCaseById(caseId);
+        log.debug("Escalate Case: Retrieved Case Details - Case ID = {}, Status = {}, Assigned Officer ID = {}",
+                investigationCase.getId(), investigationCase.getStatus(), investigationCase.getAssignedOfficerId());
 
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
             throw new IllegalStateException("Only IN_REVIEW cases can be escalated.");
         }
+
         validateCaseOwnership(investigationCase, l1OfficerId);
 
         // State Transition
         investigationCase.setStatus(CaseStatus.ESCALATED);
-        investigationCase.setEscalatedTo(dto.escalatedTo());
+        investigationCase.setEscalatedTo(null);
         investigationCase.setEscalatedAt(Instant.now());
         investigationCase.setEscalationReason(dto.escalationReason());
         investigationCase.setEscalatedBy(l1OfficerId);
         investigationCase.setAssignedOfficerId(null); // Unlock so L2 can see it
+
+        log.debug("Escalate Case: Updated Case Details - Case ID = {}, New Status = {}, Escalated By = {}",
+                investigationCase.getId(), investigationCase.getStatus(), investigationCase.getEscalatedBy());
 
         CaseNote escalationNote = CaseNote.builder()
                 .investigationCase(investigationCase)
@@ -215,6 +223,8 @@ public class CaseServiceImpl implements CaseService {
     }
 
     private void validateCaseOwnership(Case investigationCase, Long officerId) {
+        log.debug("Validating case ownership: Case ID = {}, Assigned Officer ID = {}, Current Officer ID = {}",
+                investigationCase.getId(), investigationCase.getAssignedOfficerId(), officerId);
         if (!officerId.equals(investigationCase.getAssignedOfficerId())) {
             throw new UnauthorizedAccessException("You cannot perform this action because the case is locked by another officer.");
         }
