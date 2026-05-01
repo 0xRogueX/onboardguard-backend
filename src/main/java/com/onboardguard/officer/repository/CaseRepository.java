@@ -65,5 +65,9 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     // FIFO CLAIM (L2 - Finds oldest ESCALATED case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(CaseStatus status);
+    @Query("SELECT c FROM Case c WHERE c.status = :status AND c.assignedOfficerId IS NULL ORDER BY c.escalatedAt ASC")
+    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(@Param("status") CaseStatus status);
+
+    // MY CASES: Finds all cases currently assigned to the requesting officer
+    List<Case> findByAssignedOfficerIdOrderByAssignedAtDesc(Long assignedOfficerId);
 }
