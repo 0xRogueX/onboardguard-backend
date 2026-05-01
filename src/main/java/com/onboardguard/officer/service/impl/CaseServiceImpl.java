@@ -56,6 +56,16 @@ public class CaseServiceImpl implements CaseService {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CASE_VIEW')")
+    public List<CaseDetailDto> getMyCases(Long officerId) {
+        return caseRepository.findByAssignedOfficerIdOrderByAssignedAtDesc(officerId)
+                .stream()
+                .map(caseMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
     public CaseDetailDto getCaseDetails(Long caseId) {
         Case c = getCaseById(caseId);
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();

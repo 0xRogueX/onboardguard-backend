@@ -31,6 +31,13 @@ public class CaseController {
         return ResponseEntity.ok(ApiResponse.success("Available OPEN cases retrieved successfully.", cases));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getMyCases() {
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+        List<CaseDetailDto> cases = caseService.getMyCases(currentOfficerId);
+        return ResponseEntity.ok(ApiResponse.success("Your assigned cases retrieved successfully.", cases));
+    }
+
     @GetMapping("/escalated")
     public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getEscalatedCasesQueue() {
         List<CaseDetailDto> cases = caseService.getEscalatedCasesQueue();

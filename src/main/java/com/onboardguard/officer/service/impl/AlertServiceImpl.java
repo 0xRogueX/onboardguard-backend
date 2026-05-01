@@ -133,7 +133,7 @@ public class AlertServiceImpl implements AlertService {
                 .assignedOfficerId(officerId) // The L1 who converted it automatically owns the new Case
                 .assignedBy(officerId)
                 .assignedAt(Instant.now())
-                .status(CaseStatus.OPEN) // Bypasses OPEN because the officer is already actively working on it
+                .status(CaseStatus.IN_REVIEW) // Start IN_REVIEW because it's actively assigned to this L1
                 .slaDueDate(Instant.now().plus(5, ChronoUnit.DAYS))
                 .isSlaBreached(false)
                 .build();

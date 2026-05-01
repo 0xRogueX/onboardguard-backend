@@ -11,6 +11,7 @@ public interface CaseService {
     // Queues
     List<CaseDetailDto> getAvailableCasesForQueue();
     List<CaseDetailDto> getEscalatedCasesQueue();
+    List<CaseDetailDto> getMyCases(Long officerId);
 
     // Read Data
     CaseDetailDto getCaseDetails(Long caseId);
