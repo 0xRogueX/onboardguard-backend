@@ -10,15 +10,18 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
+import com.onboardguard.shared.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -27,26 +30,91 @@ public class CaseServiceImpl implements CaseService {
 
     private final CaseRepository caseRepository;
     private final CaseMapper caseMapper;
-    private final ApplicationEventPublisher eventPublisher; // For notifying the Candidate module later
+    private final SecurityUtils securityUtils;
+
+    // 1. DASHBOARD QUEUES
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
+    public List<CaseDetailDto> getAvailableCasesForQueue() {
+        return caseRepository.findAvailableCasesForQueue(CaseStatus.OPEN)
+                .stream()
+                .map(caseMapper::toDto)
+                .toList();
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public CaseDetailDto getCaseDetails(Long caseId) {
-        Case investigationCase = getCaseById(caseId);
-        return caseMapper.toDto(investigationCase);
+    @PreAuthorize("hasAuthority('CASE_VIEW_ESCALATED')")
+    public List<CaseDetailDto> getEscalatedCasesQueue() {
+        return caseRepository.findEscalatedCasesForL2Queue(CaseStatus.ESCALATED)
+                .stream()
+                .map(caseMapper::toDto)
+                .toList();
     }
 
-    /**
-     * L1 ACTION: Escalate the case to the L2 Checker queue.
-     */
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('CASE_VIEW')")
+    public CaseDetailDto getCaseDetails(Long caseId) {
+        Case c = getCaseById(caseId);
+        Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
+
+        if (c.getAssignedOfficerId() != null && !c.getAssignedOfficerId().equals(userId)) {
+            throw new UnauthorizedAccessException("You cannot access this case. It is assigned to another officer.");
+        }
+        return caseMapper.toDto(c);
+    }
+
+
+    // 2. L1 OFFICER ACTIONS (OPEN -> IN_REVIEW -> ESCALATED)
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('CASE_CLAIM')")
+    public void claimOpenCaseManual(Long caseId, Long l1OfficerId) {
+        Case investigationCase = caseRepository.findByIdForUpdate(caseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
+
+        if (investigationCase.getStatus() != CaseStatus.OPEN) {
+            throw new BadRequestException("Only OPEN cases can be claimed.");
+        }
+        if (investigationCase.getAssignedOfficerId() != null) {
+            throw new BadRequestException("This case is already claimed by another officer.");
+        }
+
+        // State Transition
+        investigationCase.setStatus(CaseStatus.IN_REVIEW);
+        investigationCase.setAssignedOfficerId(l1OfficerId);
+        investigationCase.setAssignedAt(Instant.now());
+
+        caseRepository.save(investigationCase);
+        log.info("Case ID {} MANUALLY claimed by L1 Officer {}. Status -> IN_REVIEW.", caseId, l1OfficerId);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('CASE_CLAIM')")
+    public CaseDetailDto claimNextOpenCaseFifo(Long l1OfficerId) {
+        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByCreatedAtAsc(CaseStatus.OPEN)
+                .orElseThrow(() -> new ResourceNotFoundException("No open cases available in the queue."));
+
+        // State Transition
+        investigationCase.setStatus(CaseStatus.IN_REVIEW);
+        investigationCase.setAssignedOfficerId(l1OfficerId);
+        investigationCase.setAssignedAt(Instant.now());
+
+        log.info("Case ID {} FIFO claimed by L1 Officer {}. Status -> IN_REVIEW.", investigationCase.getId(), l1OfficerId);
+        return caseMapper.toDto(caseRepository.save(investigationCase));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('CASE_ESCALATE')")
     public void escalateCase(Long caseId, EscalateCaseDto dto, Long l1OfficerId) {
         Case investigationCase = getCaseById(caseId);
 
-        // Rule: Only the L1 Officer who currently owns the IN_REVIEW case can escalate it
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
-            throw new IllegalStateException("Only IN_REVIEW cases can be escalated.");
+            throw new BadRequestException("Only IN_REVIEW cases can be escalated.");
         }
         validateCaseOwnership(investigationCase, l1OfficerId);
 
@@ -55,11 +123,9 @@ public class CaseServiceImpl implements CaseService {
         investigationCase.setEscalatedTo(dto.escalatedTo());
         investigationCase.setEscalatedAt(Instant.now());
         investigationCase.setEscalationReason(dto.escalationReason());
+        investigationCase.setEscalatedBy(l1OfficerId);
+        investigationCase.setAssignedOfficerId(null); // Unlock so L2 can see it
 
-        // Remove ownership lock so an L2 can claim it from the queue
-        investigationCase.setAssignedOfficerId(null);
-
-        // Lock the L1 Officer's memo into the permanent audit trail
         CaseNote escalationNote = CaseNote.builder()
                 .investigationCase(investigationCase)
                 .authorId(l1OfficerId)
@@ -69,40 +135,54 @@ public class CaseServiceImpl implements CaseService {
 
         investigationCase.getNotes().add(escalationNote);
         caseRepository.save(investigationCase);
-
-        log.info("Case ID {} escalated to L2 queue by L1 Officer ID {}", caseId, l1OfficerId);
+        log.info("Case ID {} ESCALATED by L1 Officer {}", caseId, l1OfficerId);
     }
 
-    /**
-     * L2 ACTION: Claim an escalated case from the queue to start reviewing.
-     */
+
+    // 3. L2 OFFICER ACTIONS (ESCALATED -> RESOLVED)
     @Override
     @Transactional
-    public void claimEscalatedCase(Long caseId, Long l2OfficerId) {
-        Case investigationCase = getCaseById(caseId);
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
+    public void claimEscalatedCaseManual(Long caseId, Long l2OfficerId) {
+        Case investigationCase = caseRepository.findByIdForUpdate(caseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Only ESCALATED cases can be claimed by an L2 Checker.");
+            throw new BadRequestException("Only ESCALATED cases can be claimed by an L2 Checker.");
+        }
+        if (investigationCase.getAssignedOfficerId() != null) {
+            throw new BadRequestException("This case is already claimed by another officer.");
         }
 
-        // Lock the case to this specific L2 Officer
+        // Lock to L2 Officer (stays ESCALATED, but drops off dashboard due to ID assignment)
         investigationCase.setAssignedOfficerId(l2OfficerId);
+        investigationCase.setAssignedAt(Instant.now());
         caseRepository.save(investigationCase);
-
-        log.info("ESCALATED Case ID {} claimed by L2 Officer ID {}", caseId, l2OfficerId);
+        log.info("ESCALATED Case ID {} MANUALLY claimed by L2 Officer {}", caseId, l2OfficerId);
     }
 
-    /**
-     * L2 ACTION: Make the final decision (CLEARED or REJECTED).
-     */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
+    public CaseDetailDto claimNextEscalatedCaseFifo(Long l2OfficerId) {
+        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(CaseStatus.ESCALATED)
+                .orElseThrow(() -> new ResourceNotFoundException("No escalated cases available in the queue."));
+
+        investigationCase.setAssignedOfficerId(l2OfficerId);
+        investigationCase.setAssignedAt(Instant.now());
+
+        log.info("ESCALATED Case ID {} FIFO claimed by L2 Officer {}", investigationCase.getId(), l2OfficerId);
+        return caseMapper.toDto(caseRepository.save(investigationCase));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('CASE_RESOLVE')")
     public void resolveCase(Long caseId, ResolveCaseDto dto, Long l2OfficerId) {
         Case investigationCase = getCaseById(caseId);
 
-        // Ensure the case is ESCALATED and owned by this exact L2 Officer
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Case must be in ESCALATED state to be resolved.");
+            throw new BadRequestException("Case must be in ESCALATED state to be resolved.");
         }
         validateCaseOwnership(investigationCase, l2OfficerId);
 
@@ -113,7 +193,6 @@ public class CaseServiceImpl implements CaseService {
         investigationCase.setResolvedBy(l2OfficerId);
         investigationCase.setResolvedAt(Instant.now());
 
-        // Final system audit note
         CaseNote resolutionNote = CaseNote.builder()
                 .investigationCase(investigationCase)
                 .authorId(l2OfficerId)
@@ -123,15 +202,9 @@ public class CaseServiceImpl implements CaseService {
 
         investigationCase.getNotes().add(resolutionNote);
         caseRepository.save(investigationCase);
-
-        log.info("Case ID {} RESOLVED with outcome {} by L2 Officer ID {}", caseId, dto.outcome(), l2OfficerId);
-
-        // FUTURE: eventPublisher.publishEvent(new CaseResolvedEvent(investigationCase.getCandidateId(), dto.outcome()));
+        log.info("Case ID {} RESOLVED with outcome {} by L2 Officer {}", caseId, dto.outcome(), l2OfficerId);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PRIVATE HELPER METHODS
-    // ══════════════════════════════════════════════════════════════
 
     private Case getCaseById(Long caseId) {
         return caseRepository.findById(caseId)
@@ -140,8 +213,6 @@ public class CaseServiceImpl implements CaseService {
 
     private void validateCaseOwnership(Case investigationCase, Long officerId) {
         if (!officerId.equals(investigationCase.getAssignedOfficerId())) {
-            log.warn("Security Alert: Officer ID {} attempted to act on Case ID {} locked by Officer ID {}",
-                    officerId, investigationCase.getId(), investigationCase.getAssignedOfficerId());
             throw new UnauthorizedAccessException("You cannot perform this action because the case is locked by another officer.");
         }
     }

@@ -1,6 +1,7 @@
 package com.onboardguard.officer.controller;
 
-import com.onboardguard.candidate.dto.response.DocumentResponseDto;
+import com.onboardguard.officer.dto.CandidateQueueItemDto;
+import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.dto.RejectDocumentRequestDto;
 import com.onboardguard.officer.service.DocumentVerificationService;
 import com.onboardguard.shared.common.dto.ApiResponse;
@@ -9,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,18 +24,58 @@ public class DocumentVerificationController {
     private final DocumentVerificationService documentVerificationService;
     private final SecurityUtils securityUtils;
 
-    /**
-     * GET: Pulls all documents for a specific candidate.
-     * The service will attach fresh, 15-minute presigned S3 URLs to each document.
-     */
-    @GetMapping("/candidates/{candidateId}")
-    public ResponseEntity<ApiResponse<List<DocumentResponseDto>>> getCandidateDocuments(@PathVariable Long candidateId) {
+    // ══════════════════════════════════════════════════════════════
+    // 1. QUEUE & CLAIM ENDPOINTS
+    // ══════════════════════════════════════════════════════════════
 
-        List<DocumentResponseDto> documents = documentVerificationService.getCandidateDocumentsForReview(candidateId);
+    /**
+     * POST: Auto-assigns the oldest waiting candidate to the officer (FIFO Push Model).
+     * Instantly returns the full dashboard data so the UI can route to the verification screen.
+     */
+    @PostMapping("/candidates/assign-next")
+    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> claimNextAvailableCandidate() {
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+
+        CandidateVerificationDashboardDto dashboardData = documentVerificationService.claimNextAvailableCandidate(currentOfficerId);
 
         return ResponseEntity.ok(ApiResponse.success(
-                "Candidate documents retrieved successfully for review.",
-                documents
+                "Candidate successfully assigned from the queue.",
+                dashboardData
+        ));
+    }
+
+    /**
+     * POST: Manually claim a specific candidate from the UI grid (Pull Model).
+     * Locks the candidate to prevent collision with other officers.
+     */
+    @PostMapping("/candidates/{candidateId}/claim")
+    public ResponseEntity<ApiResponse<Void>> claimCandidate(@PathVariable Long candidateId) {
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+
+        documentVerificationService.claimCandidateForVerification(candidateId, currentOfficerId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Candidate claimed successfully. Ready for review.",
+                null
+        ));
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 2. DASHBOARD & VERIFICATION ENDPOINTS
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET: Pulls the complete candidate profile (data + documents) for the Officer Dashboard.
+     */
+    @GetMapping("/candidates/{candidateId}")
+    public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> getCandidateVerificationDetails(
+            @PathVariable Long candidateId) {
+
+        CandidateVerificationDashboardDto dashboardData = documentVerificationService.getCandidateVerificationDetails(candidateId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Candidate verification details retrieved successfully.",
+                dashboardData
         ));
     }
 
@@ -63,6 +103,25 @@ public class DocumentVerificationController {
         documentVerificationService.rejectDocument(documentId, request.reason(), currentOfficerId);
 
         return ResponseEntity.ok(ApiResponse.success("Document rejected. Candidate will be notified to re-upload.", null));
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // QUEUE VIEW ENDPOINT
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET: Returns the queue of all candidates waiting for document verification.
+     * Used to populate the Officer's "Pending Verifications" data grid.
+     */
+    @GetMapping("/candidates/pending")
+    public ResponseEntity<ApiResponse<List<CandidateQueueItemDto>>> getPendingCandidatesQueue() {
+
+        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue();
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Pending candidate queue retrieved successfully.",
+                queue
+        ));
     }
 
 }

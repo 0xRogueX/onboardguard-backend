@@ -12,14 +12,20 @@ spring:
     url: ${DB_URL:}
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
-    driver-class-name: org.postgresql.Driver
+#    driver-class-name: org.postgresql.Driver
+
+  # SQL INITIALIZATION (Added for data.sql seeding)
+  sql:
+    init:
+      mode: always
 
   # JPA / HIBERNATE CONFIGURATION
   jpa:
+    defer-datasource-initialization: true # CRITICAL: Ensures data.sql runs AFTER Hibernate creates tables
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:}
     show-sql: true
-#    open-in-view: false # Optimized for performance
+    open-in-view: false # Optimized for performance
     properties:
       hibernate:
         format_sql: true
@@ -71,12 +77,6 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:900000}  # 15 minutes in milliseconds
 
 app:
-
-  password-reset:
-    expiry-minutes: 30
-    rate-limit:
-      max-login-attempts: 10
-      window-seconds: 60
 
   storage:
     cloudinary:

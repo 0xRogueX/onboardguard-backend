@@ -9,8 +9,9 @@ import com.onboardguard.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,14 +30,20 @@ public class SystemConfigController {
      * Endpoint: PUT /api/v1/admin/system-configs/{configId}
      */
     @PutMapping("/{configId}")
-//    @PreAuthorize("hasRole('ROLE_ADMIN')") // Super Admins usually approve, Admins request
+    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
     public ResponseEntity<ApiResponse<String>> requestConfigUpdate(
             @PathVariable Long configId,
             @Valid @RequestBody UpdateSystemConfigDto updateDto) {
 
         // 1. Effortlessly extract the Maker's details using your SecurityUtils
-        Long currentUserId = securityUtils.getCurrentUserPrincipal().getUserId();
-        RoleCode currentUserRole = securityUtils.getCurrentUserPrincipal().getRole();
+        var principal = securityUtils.getCurrentUserPrincipal();
+        if (principal == null) {
+            log.warn("Unauthenticated request to requestConfigUpdate");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.failure("Unauthorized", "UNAUTHORIZED"));
+        }
+        Long currentUserId = principal.getUserId();
+        RoleCode currentUserRole = principal.getRole();
 
         log.info("Admin ID {} is submitting an update request for config ID {}", currentUserId, configId);
 
@@ -52,14 +59,16 @@ public class SystemConfigController {
      * Endpoint: GET /api/v1/admin/system-configs
      */
     @GetMapping
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
     public ResponseEntity<ApiResponse<List<SystemConfigResponseDto>>> getAllConfigs() {
 
-        log.info("Admin {} is viewing the system configuration grid",
-                securityUtils.getCurrentUserPrincipal().getEmail());
+        var principal = securityUtils.getCurrentUserPrincipal();
+        String actor = principal == null ? "UNKNOWN" : principal.getEmail();
+
+        log.info("Admin {} is viewing the system configuration grid", actor);
 
         List<SystemConfigResponseDto> configs = systemConfigAdminService.getAllConfigs();
 
-        return ResponseEntity.ok(ApiResponse.success( "Fetched all the configurations", configs));
+        return ResponseEntity.ok(ApiResponse.success("Fetched all the configurations", configs));
     }
 }

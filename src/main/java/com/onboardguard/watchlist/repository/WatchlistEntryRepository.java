@@ -1,7 +1,6 @@
 package com.onboardguard.watchlist.repository;
 
 import com.onboardguard.watchlist.entity.WatchlistEntry;
-import org.hibernate.sql.exec.spi.JdbcCallParameterRegistration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -55,7 +54,7 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
             "WHERE e.isActive = true " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom <= :screeningDate) " +
             "AND (e.effectiveTo   IS NULL OR e.effectiveTo   >= :screeningDate)")
-    List<WatchlistEntry> findAllActiveOnDate(@Param("date") LocalDate date);
+    List<WatchlistEntry> findAllActiveOnDate(@Param("screeningDate") LocalDate date);
 
     /**
      * Used by AdvancedScreeningStrategy.
@@ -72,7 +71,7 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
             "WHERE e.isActive = true " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom <= :screeningDate) " +
             "AND (e.effectiveTo   IS NULL OR e.effectiveTo   >= :screeningDate)")
-    List<WatchlistEntry> findAllActiveOnDateWithAliases(@Param("date") LocalDate date);
+    List<WatchlistEntry> findAllActiveOnDateWithAliases(@Param("screeningDate") LocalDate date);
 
     // This was the original Tier-1 method.  It is still wired in
     // WatchlistServiceImpl.findExactIdMatch() — that service method itself now

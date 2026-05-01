@@ -20,6 +20,7 @@ public record CaseDetailDto(
         String outcomeReason,
         Long resolvedBy,
         Instant resolvedAt,
+        Long escalatedBy,
         Long escalatedTo,
         Instant escalatedAt,
         String escalationReason,
