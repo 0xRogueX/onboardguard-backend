@@ -1,6 +1,9 @@
 package com.onboardguard.watchlist.service.impl;
 
 import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.FileFormat;
+import com.onboardguard.shared.config.service.SystemConfigService;
+import com.onboardguard.shared.storage.CloudStorageService;
 import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
 import com.onboardguard.watchlist.elasticsearch.WatchlistDocument;
@@ -21,6 +24,7 @@ import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,6 +39,9 @@ public class WatchlistServiceImpl implements WatchlistService {
     private final WatchlistCategoryRepository categoryRepository;
     private final WatchlistAliasRepository aliasRepository;
     private final WatchlistEvidenceDocRepository evidenceRepository;
+
+    private final CloudStorageService cloudStorageService;
+    private final SystemConfigService systemConfigService;
 
     private final ElasticsearchOperations elasticsearchOperations;
     private final WatchlistMapper watchlistMapper;
@@ -57,6 +64,43 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .map(watchlistMapper::toResponseDto);
     }
 
+
+    private String fileFormateToMine(FileFormat fileFormatEnum) {
+        if (fileFormatEnum == null) {
+            return "application/pdf"; // Safe default based on allowed types
+        }
+        return fileFormatToMimeType(fileFormatEnum.name());
+    }
+
+
+    private String fileFormatToMimeType(String fileFormat) {
+        if (fileFormat == null) {
+            return "application/pdf"; // Safe default
+        }
+
+        String f = fileFormat.trim().toLowerCase();
+
+        // If it already looks like a mime type, return as-is
+        if (f.contains("/")) {
+            return f;
+        }
+
+        // Strip a leading dot if present
+        if (f.startsWith(".")) {
+            f = f.substring(1);
+        }
+
+        return switch (f) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "pdf" -> "application/pdf";
+            default -> {
+                log.warn("Unsupported file format '{}'. Defaulting to application/pdf to satisfy Cloudinary constraints.", fileFormat);
+                yield "application/pdf"; // Fallback to an allowed type so it doesn't crash the presigned URL generator
+            }
+        };
+    }
+
     /**
      * Gets a single profile, fetching related aliases and evidence automatically.
      */
@@ -72,8 +116,22 @@ public class WatchlistServiceImpl implements WatchlistService {
         response.setAliases(aliasRepository.findByEntryId(entryId).stream()
                 .map(watchlistMapper::toAliasDto).collect(Collectors.toList()));
 
-        response.setEvidenceDocuments(evidenceRepository.findByEntryId(entryId).stream()
-                .map(watchlistMapper::toEvidenceDto).collect(Collectors.toList()));
+        int presignMinutes = systemConfigService.getInt("STORAGE_PRESIGNED_URL_TTL_MINUTES", 15);
+
+        response.setEvidenceDocuments(
+                evidenceRepository.findByEntryId(entryId).stream()
+                        .map(document -> {
+                            WatchlistEntryResponseDto.EvidenceDto dto = watchlistMapper.toEvidenceDto(document);
+                            String mimeType = fileFormateToMine(document.getFileFormat());
+                            String presignedUrl =  cloudStorageService.generatePresignedUrl(
+                                    document.getCloudStorageKey(),
+                                    Duration.ofMinutes(presignMinutes),
+                                    mimeType
+                            );
+                            dto.setCloudStorageKey(presignedUrl);
+                            return dto;
+                        }).collect(Collectors.toList())
+        );
 
         return response;
     }
