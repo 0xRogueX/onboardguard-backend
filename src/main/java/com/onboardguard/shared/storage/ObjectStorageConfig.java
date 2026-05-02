@@ -1,6 +1,7 @@
 package com.onboardguard.shared.storage;
 
 import com.cloudinary.Cloudinary;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,7 @@ public class ObjectStorageConfig {
     @Bean
     public Cloudinary cloudinary() {
         if (!StringUtils.hasText(cloudName) || !StringUtils.hasText(apiKey) || !StringUtils.hasText(apiSecret)) {
-            throw new IllegalStateException(
+            throw new BadRequestException(
                 "Cloudinary configuration is missing. " +
                 "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env or application.yaml"
             );

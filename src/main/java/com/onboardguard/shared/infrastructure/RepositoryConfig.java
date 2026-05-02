@@ -16,8 +16,8 @@ import org.springframework.context.annotation.FilterType;
         )
 )
 // 2. Tell Elasticsearch to ONLY scan its specific folder
-//@EnableElasticsearchRepositories(
-//        basePackages = "com.onboardguard.watchlist.elasticsearch"
-//)
+@EnableElasticsearchRepositories(
+        basePackages = "com.onboardguard.watchlist.elasticsearch"
+)
 public class RepositoryConfig {
 }

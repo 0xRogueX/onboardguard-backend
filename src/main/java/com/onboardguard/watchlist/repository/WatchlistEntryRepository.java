@@ -1,5 +1,6 @@
 package com.onboardguard.watchlist.repository;
 
+import com.onboardguard.shared.common.enums.CategoryCode;
 import com.onboardguard.watchlist.entity.WatchlistEntry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +25,7 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
             "AND e.category.code = :categoryCode " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
-    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") com.onboardguard.shared.common.enums.CategoryCode categoryCode, Pageable pageable);
+    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") CategoryCode categoryCode, Pageable pageable);
 
     Page<WatchlistEntry> findByIsActiveTrue(Pageable pageable);
 
