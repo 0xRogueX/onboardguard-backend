@@ -29,24 +29,23 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
 
     // QUEUE DASHBOARD QUERIES (Read-Only)
 
-    // L1 QUEUE -> only fresh OPEN cases that nobody has claimed
+    // L1 QUEUE -> fresh OPEN cases AND cases currently IN_REVIEW by the requesting officer
     @Query("""
         SELECT c FROM Case c
-        WHERE c.status = :status
-        AND c.assignedOfficerId IS NULL
+        WHERE (c.status = :status AND c.assignedOfficerId IS NULL)
+        OR (c.status = :inReviewStatus AND c.assignedOfficerId = :officerId)
         ORDER BY c.createdAt ASC
     """)
-    List<Case> findAvailableCasesForQueue(@Param("status") CaseStatus status);
+    List<Case> findAvailableCasesForQueue(@Param("status") CaseStatus status, @Param("inReviewStatus") CaseStatus inReviewStatus, @Param("officerId") Long officerId);
 
-
-    // L2 QUEUE -> only ESCALATED cases that nobody has claimed
+    // L2 QUEUE -> ESCALATED cases that nobody has claimed OR claimed by the requesting L2 officer
     @Query("""
         SELECT c FROM Case c
-        WHERE c.status = :status
-        AND c.assignedOfficerId IS NULL
+        WHERE (c.status = :status AND c.assignedOfficerId IS NULL)
+        OR (c.status = :status AND c.assignedOfficerId = :officerId)
         ORDER BY c.escalatedAt ASC
     """)
-    List<Case> findEscalatedCasesForL2Queue(@Param("status") CaseStatus status);
+    List<Case> findEscalatedCasesForL2Queue(@Param("status") CaseStatus status, @Param("officerId") Long officerId);
 
 
     // CLAIM QUERIES (Pessimistic Locking to prevent double-assignment)
@@ -58,7 +57,6 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     Optional<Case> findByIdForUpdate(@Param("caseId") Long caseId);
 
     // FIFO CLAIM (L1 - Finds oldest OPEN case)
-    // if alert claim and case assign to that l1 officer then not needed this method
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
@@ -79,7 +77,4 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
         ORDER BY c.escalatedAt ASC
     """)
     Optional<Case> findFirstNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
-
-    // MY CASES: Finds all cases currently assigned to the requesting officer
-    List<Case> findByAssignedOfficerIdOrderByAssignedAtDesc(Long assignedOfficerId);
 }

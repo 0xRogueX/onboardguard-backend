@@ -7,6 +7,14 @@ spring:
   application:
     name: onboardguard-backend
 
+  # MULTIPART FILE UPLOAD
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 12MB
+      file-size-threshold: 2MB
+
   # DATABASE CONNECTION (PostgreSQL)
   datasource:
     url: ${DB_URL:}
@@ -48,7 +56,10 @@ spring:
     # Disable Spring Data Elasticsearch repositories during test/local runs by default
     elasticsearch:
       repositories:
-        enabled: true
+        enabled: false
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchAutoConfiguration
 
   # EMAIL / SMTP CONFIGURATION (JavaMailSender)
   mail:
@@ -89,7 +100,7 @@ app:
 
   # Disable Elasticsearch auto-configuration in test / local by default.
   elasticsearch:
-    enabled: true
+    enabled: false
 
 # Async Configuration
 async:

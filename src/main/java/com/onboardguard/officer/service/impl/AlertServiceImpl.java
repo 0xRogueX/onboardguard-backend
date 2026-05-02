@@ -2,6 +2,7 @@ package com.onboardguard.officer.service.impl;
 
 
 import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.officer.dto.AlertDetailDto;
 import com.onboardguard.officer.entity.Alert;
 import com.onboardguard.officer.entity.Case;
@@ -42,6 +43,7 @@ public class AlertServiceImpl implements AlertService {
     private final AlertRepository alertRepository;
     private final CaseRepository caseRepository;
     private final AlertMapper alertMapper;
+    private final CandidateRepository candidateRepository;
     private final SystemConfigService systemConfigService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -60,12 +62,12 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto acknowledgeAlert(Long alertId, Long officerId){
-
+        
         Alert alert = alertRepository.findByIdForUpdate(alertId)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
 
         if(alert.getStatus() != AlertStatus.OPEN){
-            throw new BadRequestException("This alert is already claimed by another officer or no longer open.");
+            throw new BadRequestException("Only OPEN alerts can be acknowledged.");
         }
 
         alert.setStatus(AlertStatus.IN_REVIEW);  // for locking the alert when it is reviewing by an officer , so that other officer can’t be able to see that  same alert
@@ -121,11 +123,11 @@ public class AlertServiceImpl implements AlertService {
     public Long convertToCase(Long alertId, Long officerId){
        Alert alert = getAlertById(alertId);
 
-        if (alert.getStatus() == AlertStatus.OPEN) {
-            alert.setStatus(AlertStatus.IN_REVIEW);
-            alert.setAcknowledgedBy(officerId);
-            alert.setAcknowledgedAt(Instant.now());
-        }
+       if (alert.getStatus() == AlertStatus.OPEN) {
+           alert.setStatus(AlertStatus.IN_REVIEW);
+           alert.setAcknowledgedBy(officerId);
+           alert.setAcknowledgedAt(Instant.now());
+       }
 
        validateAlertOwnership(alert, officerId);
 
@@ -139,7 +141,7 @@ public class AlertServiceImpl implements AlertService {
                 .assignedOfficerId(officerId) // The L1 who converted it automatically owns the new Case
                 .assignedBy(officerId)
                 .assignedAt(Instant.now())
-                .status(CaseStatus.IN_REVIEW) // Start IN_REVIEW because it's actively assigned to this L1
+                .status(CaseStatus.IN_REVIEW) // Bypasses OPEN because the officer is already actively working on it
                 .slaDueDate(Instant.now().plus(5, ChronoUnit.DAYS))
                 .isSlaBreached(false)
                 .build();
@@ -164,6 +166,7 @@ public class AlertServiceImpl implements AlertService {
     /**
      * CREATE ALERT: Generates an Alert record from a completed ScreeningResult with HIGH/MEDIUM risk.
      * Automatically computes SLA deadline from SystemConfig and publishes AlertGeneratedEvent to notify officers.
+     * This is the missing link between Screening Engine and Officer Alert Queue!
      */
     @Override
     @Transactional
@@ -198,7 +201,7 @@ public class AlertServiceImpl implements AlertService {
                     .candidateId(candidate.getId())
                     .screeningResultId(screeningResult.getId())
                     .severity(severity)
-                    .status(AlertStatus.OPEN)  // Starts in OPEN state - waiting for L1 Officer
+                    .status(AlertStatus.OPEN)  // Starts in OPEN state — waiting for L1 Officer
                     .matchedCategories(matchedCategories)
                     .slaDeadline(Instant.now().plus(slaHours, ChronoUnit.HOURS))
                     .isSlaBreached(false)
@@ -215,10 +218,13 @@ public class AlertServiceImpl implements AlertService {
 
         } catch (Exception ex) {
             log.error("Failed to create alert from screening result ID: {}", screeningResult.getId(), ex);
-            // Don't rethrow if alert is not created
+            // Don't rethrow — screening should not fail if alert creation fails
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ═══════════════════════════════════════════════════════════════
 
     private Alert getAlertById(Long alertId) {
         return alertRepository.findById(alertId)
@@ -252,7 +258,7 @@ public class AlertServiceImpl implements AlertService {
      */
     private void validateAlertOwnership(Alert alert, Long officerId) {
         if (alert.getStatus() != AlertStatus.IN_REVIEW) {
-            throw new BadRequestException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
+            throw new IllegalStateException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
         }
 
         if (!officerId.equals(alert.getAcknowledgedBy())) {

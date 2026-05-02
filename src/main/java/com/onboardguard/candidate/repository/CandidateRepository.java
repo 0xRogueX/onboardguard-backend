@@ -26,13 +26,7 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    @Query("""
-        SELECT c
-        FROM Candidate c
-        WHERE c.onboardingStatus IN :statuses
-          AND c.verificationLockedBy IS NULL
-        ORDER BY c.formSubmittedAt ASC
-    """)
+    @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
     Optional<Candidate> findFirstAvailableForVerification(@Param("statuses") List<OnboardingStatus> statuses);
 
     /**
@@ -43,12 +37,6 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
      * Includes FORM_SUBMITTED (just submitted) and DOCUMENTS_UNDER_REVIEW with no lock
      * (e.g., officer abandoned without finishing).
      */
-    @Query("""
-        SELECT c 
-        FROM Candidate c 
-        WHERE c.onboardingStatus IN :statuses 
-          AND c.verificationLockedBy IS NULL 
-        ORDER BY c.formSubmittedAt ASC
-    """)
+    @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
     List<Candidate> findAvailableCandidatesForVerification(@Param("statuses") List<OnboardingStatus> statuses);
 }

@@ -20,6 +20,12 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
     Page<WatchlistEntry> findAllActiveAndEffective(Pageable pageable);
 
+    @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
+            "AND e.category.code = :categoryCode " +
+            "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
+            "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
+    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") com.onboardguard.shared.common.enums.CategoryCode categoryCode, Pageable pageable);
+
     Page<WatchlistEntry> findByIsActiveTrue(Pageable pageable);
 
     // ── Tier-1 exact ID match (called by WatchlistService / Screening) ────────
