@@ -7,7 +7,7 @@ import com.onboardguard.candidate.enums.DocumentStatus;
 import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
-import com.onboardguard.candidate.service.impl.CandidateDocumentServiceImpl;
+import com.onboardguard.candidate.service.CandidateDocumentService;
 import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.mapper.OfficerCandidateMapper;
@@ -34,7 +34,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     private final CandidateDocumentRepository documentRepository;
     private final CandidateRepository candidateRepository;
-    private final CandidateDocumentServiceImpl candidateDocumentService;
+    private final CandidateDocumentService candidateDocumentService;
     private final OfficerCandidateMapper officerCandidateMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ScreeningOrchestrationService screeningOrchestrationService;
