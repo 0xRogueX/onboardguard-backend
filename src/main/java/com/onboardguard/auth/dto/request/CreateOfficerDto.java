@@ -19,5 +19,5 @@ public record CreateOfficerDto(
         String phone,
 
         @NotNull(message = "Officer role is required")
-        RoleCode role // Needed so the Admin can select L1 or L2
+        RoleCode role
 ) {}
