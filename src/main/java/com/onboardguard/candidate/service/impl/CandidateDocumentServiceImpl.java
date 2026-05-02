@@ -9,6 +9,7 @@ import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.mapper.CandidateMapper;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.candidate.service.CandidateDocumentService;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.security.SecurityUtils;
@@ -28,7 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CandidateDocumentServiceImpl {
+public class CandidateDocumentServiceImpl implements CandidateDocumentService {
 
     private final CandidateRepository candidateRepository;
     private final CandidateDocumentRepository documentRepository;
@@ -38,7 +39,19 @@ public class CandidateDocumentServiceImpl {
 
     @Transactional
     @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
+    @Override
     public DocumentResponseDto uploadDocument(MultipartFile file, CandidateDocumentType candidateDocumentType) {
+        return saveDocument(file, candidateDocumentType, false);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
+    @Override
+    public DocumentResponseDto reUploadDocument(MultipartFile file, CandidateDocumentType candidateDocumentType) {
+        return saveDocument(file, candidateDocumentType, true);
+    }
+
+    private DocumentResponseDto saveDocument(MultipartFile file, CandidateDocumentType candidateDocumentType, boolean reUploadOnly) {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate profile not found."));
@@ -73,6 +86,12 @@ public class CandidateDocumentServiceImpl {
             document.setVerifiedAt(null);
             document.setUploadedAt(Instant.now());
         } else {
+            if (reUploadOnly) {
+                throw new BadRequestException(
+                        "No rejected document found for " + candidateDocumentType + " to re-upload."
+                );
+            }
+
             if (candidate.getFormSubmittedAt() != null) {
                 throw new BadRequestException("Profile is submitted. You can only re-upload rejected documents.");
             }
@@ -114,6 +133,7 @@ public class CandidateDocumentServiceImpl {
 
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
+    @Override
     public List<DocumentResponseDto> getCandidateDocuments() {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
@@ -125,6 +145,7 @@ public class CandidateDocumentServiceImpl {
                 .toList();
     }
 
+    @Override
     public DocumentResponseDto mapToResponseWithUrl(CandidateDocument document) {
         String presignedUrl = cloudStorageService.generatePresignedUrl(
                 document.getCloudStorageKey(),

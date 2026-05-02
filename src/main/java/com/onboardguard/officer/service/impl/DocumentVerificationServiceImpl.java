@@ -7,7 +7,7 @@ import com.onboardguard.candidate.enums.DocumentStatus;
 import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.repository.CandidateDocumentRepository;
 import com.onboardguard.candidate.repository.CandidateRepository;
-import com.onboardguard.candidate.service.impl.CandidateDocumentServiceImpl;
+import com.onboardguard.candidate.service.CandidateDocumentService;
 import com.onboardguard.officer.dto.CandidateQueueItemDto;
 import com.onboardguard.officer.dto.CandidateVerificationDashboardDto;
 import com.onboardguard.officer.mapper.OfficerCandidateMapper;
@@ -34,7 +34,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
     private final CandidateDocumentRepository documentRepository;
     private final CandidateRepository candidateRepository;
-    private final CandidateDocumentServiceImpl candidateDocumentService;
+    private final CandidateDocumentService candidateDocumentService;
     private final OfficerCandidateMapper officerCandidateMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ScreeningOrchestrationService screeningOrchestrationService;
@@ -255,7 +255,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         if (allVerified) {
             Candidate candidate = candidateRepository.findById(candidateId).orElseThrow();
 
-            // ✅ NEW STATUS: DOCUMENTS_VERIFIED — candidate portal will show this
+            // NEW STATUS: DOCUMENTS_VERIFIED — candidate portal will show this
             candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_VERIFIED);
 
             // Release the lock — officer has finished their job
@@ -263,7 +263,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
             candidate.setVerificationLockedAt(null);
             candidateRepository.save(candidate);
 
-            log.info("✅ All documents for Candidate ID {} VERIFIED by Officer ID {}. Triggering screening engine.", candidateId, officerId);
+            log.info("All documents for Candidate ID {} VERIFIED by Officer ID {}. Triggering screening engine.", candidateId, officerId);
 
             eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
 

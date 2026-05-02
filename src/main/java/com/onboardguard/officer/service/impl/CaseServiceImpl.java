@@ -20,6 +20,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.enums.OnboardingStatus;
+import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.shared.common.enums.CaseOutcome;
+import com.onboardguard.shared.email.service.EmailService;
+import org.thymeleaf.context.Context;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -32,6 +39,8 @@ public class CaseServiceImpl implements CaseService {
     private final CaseMapper caseMapper;
     private final SecurityUtils securityUtils;
     private final ApplicationEventPublisher eventPublisher;
+    private final CandidateRepository candidateRepository;
+    private final EmailService emailService;
 
     // 1. DASHBOARD QUEUES
     @Override
@@ -214,6 +223,42 @@ public class CaseServiceImpl implements CaseService {
         investigationCase.getNotes().add(resolutionNote);
         caseRepository.save(investigationCase);
         log.info("Case ID {} RESOLVED with outcome {} by L2 Officer {}", caseId, dto.outcome(), l2OfficerId);
+
+        // Reflect status on Candidate Dashboard/Tracking
+        updateCandidateOnboardingStatus(investigationCase.getCandidateId(), dto.outcome());
+
+        // Send Email to Candidate
+        sendResolutionEmail(investigationCase.getCandidateId(), dto.outcome(), dto.outcomeReason());
+    }
+
+    private void updateCandidateOnboardingStatus(Long candidateId, CaseOutcome outcome) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found for status update"));
+
+        if (outcome == CaseOutcome.CLEARED) {
+            candidate.setOnboardingStatus(OnboardingStatus.APPROVED);
+        } else {
+            candidate.setOnboardingStatus(OnboardingStatus.REJECTED);
+        }
+        candidateRepository.save(candidate);
+        log.info("Candidate ID {} onboarding status updated to {} based on case resolution.", candidateId, candidate.getOnboardingStatus());
+    }
+
+    private void sendResolutionEmail(Long candidateId, CaseOutcome outcome, String reason) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found for email notification"));
+
+        String toEmail = candidate.getUser().getEmail();
+        String fullName = candidate.getFullName();
+        String subject = outcome == CaseOutcome.CLEARED ? "Onboarding Approved - Welcome Aboard!" : "Onboarding Application Status Update";
+        String templateName = outcome == CaseOutcome.CLEARED ? "case-resolved-cleared" : "case-resolved-rejected";
+
+        Context context = new Context();
+        context.setVariable("candidateName", fullName);
+        context.setVariable("reason", reason);
+        context.setVariable("outcome", outcome.name());
+
+        emailService.sendHtmlEmail(toEmail, subject, templateName, context);
     }
 
 
