@@ -39,8 +39,12 @@ public class UserManagementServiceImpl implements UserManagementService {
         String oldStatus = targetUser.isActive() ? "ACTIVE" : "INACTIVE";
         String newStatus = isActive ? "ACTIVE" : "INACTIVE";
 
-        targetUser.setActive(isActive);
-        userRepository.save(targetUser);
+        // Use repository methods for activation/deactivation
+        if (isActive) {
+            userRepository.activateById(targetUserId);
+        } else {
+            userRepository.deactivateById(targetUserId);
+        }
 
         String action = isActive ? "USER_ACTIVATED" : "USER_DEACTIVATED";
 

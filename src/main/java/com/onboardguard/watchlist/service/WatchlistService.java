@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface WatchlistService {
-    Page<WatchlistEntryResponseDto> getAllActiveEntries(Pageable pageable);
+    Page<WatchlistEntryResponseDto> getAllActiveEntries(com.onboardguard.shared.common.enums.CategoryCode categoryCode, Pageable pageable);
 
     WatchlistEntryResponseDto getEntryDetails(Long entryId);
 

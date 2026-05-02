@@ -28,8 +28,10 @@ public class WatchlistController {
     @GetMapping
     // @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN'
     // , 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(Pageable pageable) {
-        Page<WatchlistEntryResponseDto> pageData = watchlistService.getAllActiveEntries(pageable);
+    public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(
+            @RequestParam(required = false) com.onboardguard.shared.common.enums.CategoryCode category,
+            Pageable pageable) {
+        Page<WatchlistEntryResponseDto> pageData = watchlistService.getAllActiveEntries(category, pageable);
         return ResponseEntity.ok(ApiResponse.success("Fetched watchlist entries", pageData));
     }
 

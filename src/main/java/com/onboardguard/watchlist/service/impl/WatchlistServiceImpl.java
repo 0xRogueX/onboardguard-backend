@@ -47,9 +47,13 @@ public class WatchlistServiceImpl implements WatchlistService {
      * Gets a paginated list of all active entries for the Admin Data Grid.
      */
     @Override
-    public Page<WatchlistEntryResponseDto> getAllActiveEntries(Pageable pageable) {
+    public Page<WatchlistEntryResponseDto> getAllActiveEntries(CategoryCode categoryCode, Pageable pageable) {
         log.debug("Fetching paginated watchlist entries");
-        return entryRepository.findAllActiveAndEffective(pageable)
+        if (categoryCode == null) {
+            return entryRepository.findAllActiveAndEffective(pageable)
+                    .map(watchlistMapper::toResponseDto);
+        }
+        return entryRepository.findAllActiveAndEffectiveByCategory(categoryCode, pageable)
                 .map(watchlistMapper::toResponseDto);
     }
 
