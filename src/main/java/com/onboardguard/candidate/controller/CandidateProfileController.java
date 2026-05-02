@@ -25,6 +25,12 @@ public class CandidateProfileController {
         return ResponseEntity.ok(ApiResponse.success("Status fetched successfully", status));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<com.onboardguard.candidate.dto.response.CandidateProfileResponseDto>> getProfileDetails() {
+        com.onboardguard.candidate.dto.response.CandidateProfileResponseDto details = candidateService.getProfileDetails();
+        return ResponseEntity.ok(ApiResponse.success("Profile details fetched successfully", details));
+    }
+
     @PostMapping("/personal")
     public ResponseEntity<ApiResponse<Void>> updatePersonalDetails(
             @Valid @RequestBody PersonalDetailsRequestDto dto) {

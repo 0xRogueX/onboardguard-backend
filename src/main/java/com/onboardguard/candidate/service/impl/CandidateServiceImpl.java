@@ -133,4 +133,11 @@ public class CandidateServiceImpl implements CandidateService {
         Candidate candidate = getOrCreateCandidate();
         return candidateMapper.toStatusDto(candidate);
     }
+
+    @Override
+    @PreAuthorize("hasAuthority('CANDIDATE_STATUS_VIEW_OWN')")
+    public com.onboardguard.candidate.dto.response.CandidateProfileResponseDto getProfileDetails() {
+        Candidate candidate = getOrCreateCandidate();
+        return candidateMapper.toProfileDto(candidate);
+    }
 }

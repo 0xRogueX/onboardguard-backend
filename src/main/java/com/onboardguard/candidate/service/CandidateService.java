@@ -13,4 +13,6 @@ public interface CandidateService {
     void submitProfile();
 
     CandidateStatusResponseDto getStatus();
+
+    com.onboardguard.candidate.dto.response.CandidateProfileResponseDto getProfileDetails();
 }

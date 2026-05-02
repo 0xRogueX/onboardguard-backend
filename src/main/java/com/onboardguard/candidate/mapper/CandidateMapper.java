@@ -41,6 +41,15 @@ public interface CandidateMapper {
     @Mapping(target = "isSubmitted", expression = "java(candidate.getFormSubmittedAt() != null)")
     CandidateStatusResponseDto toStatusDto(Candidate candidate);
 
+    // Mappings for fetching profile details
+    @Mapping(target = "personalDetails", source = "personalDetail")
+    @Mapping(target = "professionalDetails", source = "professionalDetail")
+    @Mapping(target = "onboardingStatus", source = "onboardingStatus")
+    com.onboardguard.candidate.dto.response.CandidateProfileResponseDto toProfileDto(Candidate candidate);
+
+    PersonalDetailsRequestDto toPersonalDto(CandidatePersonalDetail entity);
+    ProfessionalDetailsRequestDto toProfessionalDto(CandidateProfessionalDetail entity);
+
     // PERSONAL DETAILS - CREATE
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "candidate", source = "candidate")
