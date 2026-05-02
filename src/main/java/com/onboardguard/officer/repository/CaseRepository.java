@@ -58,15 +58,27 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
     Optional<Case> findByIdForUpdate(@Param("caseId") Long caseId);
 
     // FIFO CLAIM (L1 - Finds oldest OPEN case)
+    // if alert claim and case assign to that l1 officer then not needed this method
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByCreatedAtAsc(CaseStatus status);
+    @Query("""
+        SELECT c FROM Case c
+        WHERE c.status = :status
+        AND c.assignedOfficerId IS NULL
+        ORDER BY c.createdAt ASC
+    """)
+    Optional<Case> findFirstNextOpenCaseForUpdate(@Param("status") CaseStatus status);
 
     // FIFO CLAIM (L2 - Finds oldest ESCALATED case)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    @Query("SELECT c FROM Case c WHERE c.status = :status AND c.assignedOfficerId IS NULL ORDER BY c.escalatedAt ASC")
-    Optional<Case> findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(@Param("status") CaseStatus status);
+    @Query("""
+        SELECT c FROM Case c
+        WHERE c.status = :status
+        AND c.assignedOfficerId IS NULL
+        ORDER BY c.escalatedAt ASC
+    """)
+    Optional<Case> findFirstNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
 
     // MY CASES: Finds all cases currently assigned to the requesting officer
     List<Case> findByAssignedOfficerIdOrderByAssignedAtDesc(Long assignedOfficerId);

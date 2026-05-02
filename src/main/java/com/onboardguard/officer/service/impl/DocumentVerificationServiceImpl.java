@@ -40,8 +40,18 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     private final ScreeningOrchestrationService screeningOrchestrationService;
 
     /**
-     * Officer pulls all documents for a specific candidate to review them side-by-side.
+     * Statuses that mean a candidate is waiting in the officer queue.
+     * FORM_SUBMITTED = candidate hit "Submit" button.
+     * DOCUMENTS_UNDER_REVIEW = previously claimed but lock was released (e.g. officer session expired).
      */
+    private static final List<OnboardingStatus> QUEUE_STATUSES = List.of(
+            OnboardingStatus.FORM_SUBMITTED,
+            OnboardingStatus.DOCUMENTS_UNDER_REVIEW
+    );
+
+    // ══════════════════════════════════════════════════════════════
+    // Officer pulls all documents for a specific candidate.
+    // ══════════════════════════════════════════════════════════════
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId) {
@@ -56,36 +66,46 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     // ══════════════════════════════════════════════════════════════
 
     /**
-     * GET QUEUE: Returns a lightweight list of unlocked candidates for the Officer UI grid.
+     * GET QUEUE: Returns all unlocked candidates with FORM_SUBMITTED or DOCUMENTS_UNDER_REVIEW status.
+     * This is the fix for the primary bug — candidates set to FORM_SUBMITTED by submitProfile()
+     * now correctly appear in the officer's "Candidate Queue" grid.
      */
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
     public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
-
-        // Fetch unlocked candidates who are waiting for document verification
         List<Candidate> pendingCandidates = candidateRepository
-                .findAvailableCandidatesForVerification(OnboardingStatus.DOCUMENTS_UPLOADED);
+                .findAvailableCandidatesForVerification(QUEUE_STATUSES);
 
-        // Map to lightweight DTOs for the frontend
+        log.info("Officer queue loaded: {} candidates waiting", pendingCandidates.size());
+
         return pendingCandidates.stream()
                 .map(officerCandidateMapper::toQueueItemDto)
                 .toList();
     }
 
-    // 1. QUEUE & CLAIM LOGIC
+    // ══════════════════════════════════════════════════════════════
+    // QUEUE & CLAIM LOGIC
+    // ══════════════════════════════════════════════════════════════
+
     /**
      * MANUAL PULL: Officer clicks a specific candidate in the grid to lock and claim them.
+     * Transitions status to DOCUMENTS_UNDER_REVIEW so it's visible on the candidate portal.
      */
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public void claimCandidateForVerification(Long candidateId, Long officerId) {
         Candidate candidate = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with ID: " + candidateId));
+
+        // Validate candidate is in a claimable state
+        if (!QUEUE_STATUSES.contains(candidate.getOnboardingStatus())) {
+            throw new BadRequestException("Candidate is not in a state that can be claimed. Current status: " + candidate.getOnboardingStatus());
+        }
 
         if (candidate.getVerificationLockedBy() != null && !candidate.getVerificationLockedBy().equals(officerId)) {
-            throw new IllegalStateException("This candidate is already being reviewed by another officer.");
+            throw new BadRequestException("This candidate is already being reviewed by Officer #" + candidate.getVerificationLockedBy());
         }
 
         lockCandidate(candidate, officerId);
@@ -99,7 +119,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     @PreAuthorize("hasAuthority('DOC_CLAIM')")
     public CandidateVerificationDashboardDto claimNextAvailableCandidate(Long officerId) {
         Candidate nextCandidate = candidateRepository
-                .findFirstByOnboardingStatusAndVerificationLockedByIsNullOrderByFormSubmittedAtAsc(OnboardingStatus.DOCUMENTS_UPLOADED)
+                .findFirstAvailableForVerification(QUEUE_STATUSES)
                 .orElseThrow(() -> new ResourceNotFoundException("No candidates currently waiting for verification!"));
 
         lockCandidate(nextCandidate, officerId);
@@ -107,10 +127,10 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         return getCandidateVerificationDetails(nextCandidate.getId());
     }
 
-    // 2. DASHBOARD VIEW (MAPSTRUCT)
-    /**
-     * Fetches the candidate profile AND documents into a single JSON payload.
-     */
+    // ══════════════════════════════════════════════════════════════
+    // DASHBOARD VIEW
+    // ══════════════════════════════════════════════════════════════
+
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('DOC_VIEW_DETAILS')")
@@ -126,7 +146,10 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         return officerCandidateMapper.toDashboardDto(candidate, documents);
     }
 
-    // 3. DOCUMENT VERIFICATION LOGIC
+    // ══════════════════════════════════════════════════════════════
+    // DOCUMENT VERIFICATION ACTIONS
+    // ══════════════════════════════════════════════════════════════
+
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('DOC_APPROVE')")
@@ -146,7 +169,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         documentRepository.save(document);
         log.info("Document ID {} VERIFIED by Officer ID {}", documentId, officerId);
 
-        checkAndAdvanceCandidateStatus(document.getCandidate().getId());
+        checkAndAdvanceCandidateStatus(document.getCandidate().getId(), officerId);
     }
 
     @Override
@@ -168,7 +191,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
         Candidate candidate = document.getCandidate();
 
-        // Lock candidate status and unlock the profile (so it's not stuck with the officer)
+        // Mark as rejected and release lock so officer is freed up
         candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_REJECTED);
         candidate.setVerificationLockedBy(null);
         candidate.setVerificationLockedAt(null);
@@ -186,18 +209,27 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         eventPublisher.publishEvent(event);
     }
 
-    // PRIVATE HELPER METHODS
+    // ══════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Lock the candidate to a specific officer and set status to DOCUMENTS_UNDER_REVIEW
+     * so the candidate portal shows their application is being reviewed.
+     */
     private void lockCandidate(Candidate candidate, Long officerId) {
         candidate.setVerificationLockedBy(officerId);
         candidate.setVerificationLockedAt(Instant.now());
+        // Transition to DOCUMENTS_UNDER_REVIEW so candidate portal reflects it
+        candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_UNDER_REVIEW);
         candidateRepository.save(candidate);
 
-        log.info("Candidate ID {} locked by Officer ID {}", candidate.getId(), officerId);
+        log.info("Candidate ID {} locked by Officer ID {} — status → DOCUMENTS_UNDER_REVIEW", candidate.getId(), officerId);
     }
 
     private void validateLockOwnership(Candidate candidate, Long officerId) {
         if (!officerId.equals(candidate.getVerificationLockedBy())) {
-            throw new IllegalStateException("You cannot modify documents for a candidate you have not locked/claimed.");
+            throw new BadRequestException("You cannot modify documents for a candidate you have not claimed. Claim this candidate first.");
         }
     }
 
@@ -206,25 +238,40 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with ID: " + documentId));
     }
 
-    private void checkAndAdvanceCandidateStatus(Long candidateId) {
+    /**
+     * After each document approval, check if ALL documents are now verified.
+     * If so, set status to DOCUMENTS_VERIFIED, release the lock, and trigger screening.
+     */
+    private void checkAndAdvanceCandidateStatus(Long candidateId, Long officerId) {
         List<CandidateDocument> allDocs = documentRepository.findByCandidateId(candidateId);
+
+        if (allDocs.isEmpty()) {
+            log.warn("Candidate ID {} has no documents — cannot advance status.", candidateId);
+            return;
+        }
 
         boolean allVerified = allDocs.stream().allMatch(doc -> doc.getStatus() == DocumentStatus.VERIFIED);
 
         if (allVerified) {
             Candidate candidate = candidateRepository.findById(candidateId).orElseThrow();
-            candidate.setOnboardingStatus(OnboardingStatus.SCREENING_PENDING);
 
-            // Release the lock, the officer is done!
+            // NEW STATUS: DOCUMENTS_VERIFIED — candidate portal will show this
+            candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_VERIFIED);
+
+            // Release the lock — officer has finished their job
             candidate.setVerificationLockedBy(null);
             candidate.setVerificationLockedAt(null);
             candidateRepository.save(candidate);
 
-            log.info("Candidate ID {} has all documents verified. Ready for Screening Engine.", candidateId);
+            log.info("All documents for Candidate ID {} VERIFIED by Officer ID {}. Triggering screening engine.", candidateId, officerId);
 
             eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
 
+            // Hand off to screening engine (which will set to SCREENING_IN_PROGRESS)
             screeningOrchestrationService.runScreening(candidateId);
+        } else {
+            long pendingCount = allDocs.stream().filter(d -> d.getStatus() == DocumentStatus.PENDING).count();
+            log.info("Candidate ID {} still has {} document(s) pending review.", candidateId, pendingCount);
         }
     }
 }

@@ -31,13 +31,6 @@ public class CaseController {
         return ResponseEntity.ok(ApiResponse.success("Available OPEN cases retrieved successfully.", cases));
     }
 
-    @GetMapping("/my")
-    public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getMyCases() {
-        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
-        List<CaseDetailDto> cases = caseService.getMyCases(currentOfficerId);
-        return ResponseEntity.ok(ApiResponse.success("Your assigned cases retrieved successfully.", cases));
-    }
-
     @GetMapping("/escalated")
     public ResponseEntity<ApiResponse<List<CaseDetailDto>>> getEscalatedCasesQueue() {
         List<CaseDetailDto> cases = caseService.getEscalatedCasesQueue();
@@ -59,6 +52,7 @@ public class CaseController {
         return ResponseEntity.ok(ApiResponse.success("OPEN case claimed successfully.", null));
     }
 
+    // if alert claim and case assign to that l1 officer then not needed this method
     @PostMapping("/available/assign-next")
     public ResponseEntity<ApiResponse<CaseDetailDto>> claimNextOpenCaseFifo() {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();

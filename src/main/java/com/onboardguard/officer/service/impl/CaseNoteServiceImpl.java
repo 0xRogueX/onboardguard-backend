@@ -8,6 +8,7 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseNoteService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,7 @@ public class CaseNoteServiceImpl implements CaseNoteService {
     private final CaseRepository caseRepository;
     private final CaseNoteMapper caseNoteMapper;
 
-    /**
-     * Append a manual investigation note to an active Case.
-     */
+    // Append a manual investigation note to an active Case.
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('CASE_ADD_NOTE')")
@@ -37,7 +36,7 @@ public class CaseNoteServiceImpl implements CaseNoteService {
 
         // 1. Prevent tampering with resolved cases
         if (investigationCase.getStatus() == CaseStatus.RESOLVED) {
-            throw new IllegalStateException("Cannot add notes to a RESOLVED case. The audit trail is permanently locked.");
+            throw new BadRequestException("Cannot add notes to a RESOLVED case. The audit trail is permanently locked.");
         }
 
         // 2. Prevent random officers from dropping notes on cases they don't own

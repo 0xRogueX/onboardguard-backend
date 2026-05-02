@@ -53,15 +53,15 @@ public class CaseServiceImpl implements CaseService {
                 .toList();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('CASE_VIEW')")
-    public List<CaseDetailDto> getMyCases(Long officerId) {
-        return caseRepository.findByAssignedOfficerIdOrderByAssignedAtDesc(officerId)
-                .stream()
-                .map(caseMapper::toDto)
-                .toList();
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    @PreAuthorize("hasAuthority('CASE_VIEW')")
+//    public List<CaseDetailDto> getMyCases(Long officerId) {
+//        return caseRepository.findByAssignedOfficerIdOrderByAssignedAtDesc(officerId)
+//                .stream()
+//                .map(caseMapper::toDto)
+//                .toList();
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -101,11 +101,12 @@ public class CaseServiceImpl implements CaseService {
         log.info("Case ID {} MANUALLY claimed by L1 Officer {}. Status -> IN_REVIEW.", caseId, l1OfficerId);
     }
 
+    // if alert claim and case assign to that l1 officer then not needed this method
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('CASE_CLAIM')")
     public CaseDetailDto claimNextOpenCaseFifo(Long l1OfficerId) {
-        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByCreatedAtAsc(CaseStatus.OPEN)
+        Case investigationCase = caseRepository.findFirstNextOpenCaseForUpdate(CaseStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No open cases available in the queue."));
 
         // State Transition
@@ -121,7 +122,13 @@ public class CaseServiceImpl implements CaseService {
     @Transactional
     @PreAuthorize("hasAuthority('CASE_ESCALATE')")
     public void escalateCase(Long caseId, EscalateCaseDto dto, Long l1OfficerId) {
+
+        log.debug("Escalate Case: Starting escalation for Case ID = {}, L1 Officer ID = {}", caseId, l1OfficerId);
+
         Case investigationCase = getCaseById(caseId);
+
+        log.debug("Escalate Case: Retrieved Case Details - Case ID = {}, Status = {}, Assigned Officer ID = {}",
+                investigationCase.getId(), investigationCase.getStatus(), investigationCase.getAssignedOfficerId());
 
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
             throw new BadRequestException("Only IN_REVIEW cases can be escalated.");
@@ -130,11 +137,15 @@ public class CaseServiceImpl implements CaseService {
 
         // State Transition
         investigationCase.setStatus(CaseStatus.ESCALATED);
-        investigationCase.setEscalatedTo(dto.escalatedTo());
+//        investigationCase.setEscalatedTo(dto.escalatedTo());
+        investigationCase.setEscalatedTo(null);
         investigationCase.setEscalatedAt(Instant.now());
         investigationCase.setEscalationReason(dto.escalationReason());
         investigationCase.setEscalatedBy(l1OfficerId);
         investigationCase.setAssignedOfficerId(null); // Unlock so L2 can see it
+
+        log.debug("Escalate Case: Updated Case Details - Case ID = {}, New Status = {}, Escalated By = {}",
+                investigationCase.getId(), investigationCase.getStatus(), investigationCase.getEscalatedBy());
 
         CaseNote escalationNote = CaseNote.builder()
                 .investigationCase(investigationCase)
@@ -175,7 +186,7 @@ public class CaseServiceImpl implements CaseService {
     @Transactional
     @PreAuthorize("hasAuthority('CASE_RESOLVE')")
     public CaseDetailDto claimNextEscalatedCaseFifo(Long l2OfficerId) {
-        Case investigationCase = caseRepository.findFirstByStatusAndAssignedOfficerIdIsNullOrderByEscalatedAtAsc(CaseStatus.ESCALATED)
+        Case investigationCase = caseRepository.findFirstNextEscalatedCaseForUpdate(CaseStatus.ESCALATED)
                 .orElseThrow(() -> new ResourceNotFoundException("No escalated cases available in the queue."));
 
         investigationCase.setAssignedOfficerId(l2OfficerId);
@@ -222,6 +233,8 @@ public class CaseServiceImpl implements CaseService {
     }
 
     private void validateCaseOwnership(Case investigationCase, Long officerId) {
+        log.debug("Validating case ownership: Case ID = {}, Assigned Officer ID = {}, Current Officer ID = {}",
+                investigationCase.getId(), investigationCase.getAssignedOfficerId(), officerId);
         if (!officerId.equals(investigationCase.getAssignedOfficerId())) {
             throw new UnauthorizedAccessException("You cannot perform this action because the case is locked by another officer.");
         }

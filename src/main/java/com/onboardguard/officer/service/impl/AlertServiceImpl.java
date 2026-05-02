@@ -60,7 +60,7 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto acknowledgeAlert(Long alertId, Long officerId){
-        
+
         Alert alert = alertRepository.findByIdForUpdate(alertId)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
 
@@ -121,6 +121,12 @@ public class AlertServiceImpl implements AlertService {
     public Long convertToCase(Long alertId, Long officerId){
        Alert alert = getAlertById(alertId);
 
+        if (alert.getStatus() == AlertStatus.OPEN) {
+            alert.setStatus(AlertStatus.IN_REVIEW);
+            alert.setAcknowledgedBy(officerId);
+            alert.setAcknowledgedAt(Instant.now());
+        }
+
        validateAlertOwnership(alert, officerId);
 
        alert.setStatus(AlertStatus.CONVERTED_TO_CASE);
@@ -158,7 +164,6 @@ public class AlertServiceImpl implements AlertService {
     /**
      * CREATE ALERT: Generates an Alert record from a completed ScreeningResult with HIGH/MEDIUM risk.
      * Automatically computes SLA deadline from SystemConfig and publishes AlertGeneratedEvent to notify officers.
-     * This is the missing link between Screening Engine and Officer Alert Queue!
      */
     @Override
     @Transactional
@@ -193,7 +198,7 @@ public class AlertServiceImpl implements AlertService {
                     .candidateId(candidate.getId())
                     .screeningResultId(screeningResult.getId())
                     .severity(severity)
-                    .status(AlertStatus.OPEN)  // Starts in OPEN state — waiting for L1 Officer
+                    .status(AlertStatus.OPEN)  // Starts in OPEN state - waiting for L1 Officer
                     .matchedCategories(matchedCategories)
                     .slaDeadline(Instant.now().plus(slaHours, ChronoUnit.HOURS))
                     .isSlaBreached(false)
@@ -210,13 +215,10 @@ public class AlertServiceImpl implements AlertService {
 
         } catch (Exception ex) {
             log.error("Failed to create alert from screening result ID: {}", screeningResult.getId(), ex);
-            // Don't rethrow — screening should not fail if alert creation fails
+            // Don't rethrow if alert is not created
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PRIVATE HELPERS
-    // ═══════════════════════════════════════════════════════════════
 
     private Alert getAlertById(Long alertId) {
         return alertRepository.findById(alertId)
