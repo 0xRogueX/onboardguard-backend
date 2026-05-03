@@ -15,10 +15,6 @@ import java.util.Optional;
  *
  * The AuditorAware bean tells Spring who is making a change,
  * which gets stored in created_by / updated_by on BaseEntity.
- *
- * Returns:
- *   - Authenticated user's email (for API-triggered changes)
- *   - "SYSTEM" (for Flyway seeds, batch jobs, or unauthenticated contexts)
  */
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")

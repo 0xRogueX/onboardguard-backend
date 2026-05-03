@@ -196,7 +196,7 @@ public class CloudinaryStorageServiceImpl implements CloudStorageService {
         if (contentType == null) return "raw";
         return switch (contentType.toLowerCase()) {
             case "image/jpeg", "image/png" -> "image";
-            case "application/pdf" -> "raw"; // REVERTED: PDFs must be raw to retain document properties
+            case "application/pdf" -> "raw";
             default -> "raw";
         };
     }
