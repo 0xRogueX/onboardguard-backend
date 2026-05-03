@@ -14,7 +14,6 @@ import org.mapstruct.ReportingPolicy;
 public interface AuthMapper {
 
     // --- toEntity ---
-
     @Mapping(target = "id",            ignore = true)
     @Mapping(target = "email",        source = "dto.email")
     @Mapping(target = "fullName",     source = "dto.fullName")
@@ -36,23 +35,21 @@ public interface AuthMapper {
     @Mapping(target = "createdByUser", source = "createdBy")
     AppUser toEntity(CreateOfficerDto dto, String encodedPassword, AppUser createdBy);
 
-    // --- toDto (Register flow: AppUser entity → CandidateLoginResponseDto) ---
-    // Used by registerCandidate() — entity is freshly saved, no principal yet
+    // --- toDto (Register flow: AppUser entity -> CandidateLoginResponseDto) ---
     @Mapping(target = "token",           source = "token")
     @Mapping(target = "expiresInSeconds",source = "expiresInSeconds")
     @Mapping(target = "email",           source = "user.email")
     @Mapping(target = "fullName",        source = "user.fullName")
     CandidateLoginResponseDto toCandidateDto(AppUser user, String token, long expiresInSeconds);
 
-    // --- toDto (Login flow: CustomUserDetails principal → CandidateLoginResponseDto) ---
-    // Used by loginCandidate() — principal already loaded from Redis/DB
+    // --- toDto (Login flow: CustomUserDetails principal -> CandidateLoginResponseDto) ---
     @Mapping(target = "token",           source = "token")
     @Mapping(target = "expiresInSeconds",source = "expiresInSeconds")
     @Mapping(target = "email",           source = "principal.email")
     @Mapping(target = "fullName",        source = "principal.fullName")
     CandidateLoginResponseDto toCandidateDto(CustomUserDetails principal, String token, long expiresInSeconds);
 
-    // --- toDto (Staff login: CustomUserDetails principal → StaffLoginResponseDto) ---
+    // --- toDto (Staff login: CustomUserDetails principal -> StaffLoginResponseDto) ---
     @Mapping(target = "token",           source = "token")
     @Mapping(target = "roleCode",        source = "roleCode")
     @Mapping(target = "expiresInSeconds",source = "expiresInSeconds")

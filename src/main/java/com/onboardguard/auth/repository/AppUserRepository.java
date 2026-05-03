@@ -14,20 +14,16 @@ import java.util.UUID;
 @Repository
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
-    // Look-up
     Optional<AppUser> findByEmail(String email);
 
-    // Existence checks (used during registration / officer creation)
     boolean existsByEmail(String email);
 
-    // Role-based queries (used by Admin / Super Admin panels)
     List<AppUser> findByRole(RoleCode role);
+
     List<AppUser> findByRoleAndActive(RoleCode role, boolean active);
 
-    // Returns all staff users (everyone except candidates).
     @Query("SELECT u FROM AppUser u WHERE u.role != :candidateRole ORDER BY u.fullName")
     List<AppUser> findAllStaff(@Param("candidateRole") RoleCode candidateRole);
-
 
     /**
      * Uses executeUpdate() instead of getResultList()
@@ -35,11 +31,21 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
      * Caller must also call userDetailsService.evictCache(email) after this.
      */
     @Modifying
-    @Query("UPDATE AppUser u SET u.active = false, u.updatedAt = CURRENT_TIMESTAMP WHERE u.id = :id")
+    @Query("""
+        UPDATE AppUser u
+        SET u.active = false,
+            u.updatedAt = CURRENT_TIMESTAMP
+        WHERE u.id = :id
+    """)
     int deactivateById(@Param("id") Long id);
 
     @Modifying
-    @Query("UPDATE AppUser u SET u.active = true, u.updatedAt = CURRENT_TIMESTAMP WHERE u.id = :id")
+    @Query("""
+        UPDATE AppUser u
+        SET u.active = true,
+            u.updatedAt = CURRENT_TIMESTAMP
+        WHERE u.id = :id
+    """)
     int activateById(@Param("id") Long id);
 
     @Modifying

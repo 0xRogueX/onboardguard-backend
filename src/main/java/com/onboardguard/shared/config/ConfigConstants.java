@@ -145,11 +145,11 @@ public final class ConfigConstants {
     // BUSINESS RULES & SLA
     // Category: BUSINESS
     /**
-     * SLA (Service Level Agreement) in hours for officers to review a flagged screening.
-     * Type: INTEGER (default 48)
+     * SLA (Service Level Agreement) in minutes for officers to review a flagged screening.
+     * Type: INTEGER (default 30)
      * Usage: Officer notification, SLA breach detection
      */
-    public static final String SLA_HOURS = "SLA_HOURS";
+    public static final String SLA_MINUTES = "SLA_MINUTES";
 
     // DEFAULT VALUES
     // Used by SystemConfigService when database key is not found.
@@ -184,7 +184,6 @@ public final class ConfigConstants {
         public static final int JWT_EXPIRATION_MS = 900000; // 15 minutes
 
         // Business
-        public static final int SLA_HOURS = 48;
+        public static final int SLA_MINUTES = 30;
     }
 }
-

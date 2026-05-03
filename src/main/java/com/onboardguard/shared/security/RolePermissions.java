@@ -3,9 +3,6 @@ package com.onboardguard.shared.security;
 import com.onboardguard.shared.common.enums.RoleCode;
 import java.util.Set;
 
-/**
- * Central permission registry for the entire system.
- */
 public final class RolePermissions {
 
     private RolePermissions() {}
@@ -121,7 +118,7 @@ public final class RolePermissions {
                     ALERT_VIEW,
 
                     CASE_VIEW,
-                    CASE_VIEW_ESCALATED, // 🔥 ADDED HERE
+                    CASE_VIEW_ESCALATED,
                     CASE_CREATE,
                     CASE_CLAIM,
                     CASE_ADD_NOTE,

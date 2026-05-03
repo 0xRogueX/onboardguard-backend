@@ -118,13 +118,13 @@ public class CandidateDocumentServiceImpl implements CandidateDocumentService {
 
         document = documentRepository.save(document);
 
-        // Advance status to DOCUMENTS_UPLOADED:
-        // - First upload: PROFESSIONAL_SAVED → DOCUMENTS_UPLOADED
-        // - Re-upload after rejection: DOCUMENTS_REJECTED → DOCUMENTS_UPLOADED
         OnboardingStatus currentStatus = candidate.getOnboardingStatus();
-        if (currentStatus == OnboardingStatus.PROFESSIONAL_SAVED
-                || currentStatus == OnboardingStatus.DOCUMENTS_REJECTED) {
+        if (currentStatus == OnboardingStatus.PERSONAL_SAVED || currentStatus == OnboardingStatus.PROFESSIONAL_SAVED) {
             candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_UPLOADED);
+            candidateRepository.save(candidate);
+        } else if (currentStatus == OnboardingStatus.DOCUMENTS_REJECTED) {
+            candidate.setOnboardingStatus(OnboardingStatus.FORM_SUBMITTED);
+            candidate.setFormSubmittedAt(Instant.now());
             candidateRepository.save(candidate);
         }
 
@@ -134,13 +134,14 @@ public class CandidateDocumentServiceImpl implements CandidateDocumentService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('CANDIDATE_DOC_UPLOAD')")
     @Override
-    public List<DocumentResponseDto> getCandidateDocuments() {
+    public List<DocumentResponseDto> getCandidateDocuments(DocumentStatus status) {
         Long userId = securityUtils.getCurrentUserPrincipal().getUserId();
         Candidate candidate = candidateRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate profile not found."));
 
         return documentRepository.findByCandidateId(candidate.getId())
                 .stream()
+                .filter(doc -> status == null || doc.getStatus() == status)
                 .map(this::mapToResponseWithUrl)
                 .toList();
     }

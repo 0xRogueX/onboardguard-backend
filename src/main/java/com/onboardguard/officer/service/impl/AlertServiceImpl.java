@@ -17,6 +17,7 @@ import com.onboardguard.shared.common.enums.AlertStatus;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
 import com.onboardguard.shared.common.enums.SeverityLevel;
+import com.onboardguard.shared.common.events.CaseResolvedEvent;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
@@ -62,7 +63,7 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CLAIM')")
     public AlertDetailDto acknowledgeAlert(Long alertId, Long officerId){
-        
+
         Alert alert = alertRepository.findByIdForUpdate(alertId)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
 
@@ -114,25 +115,38 @@ public class AlertServiceImpl implements AlertService {
 
         log.info("Alert ID {} CLOSED as false positive by L1 Officer ID {}. Reason: {}", alertId, officerId, reason);
 
-        // Note: Publish an event here if you want the Screening Engine to know the alert was dismissed
+        // Update candidate status to APPROVED and notify
+        Candidate candidate = candidateRepository.findById(alert.getCandidateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+
+        candidate.setOnboardingStatus(com.onboardguard.candidate.enums.OnboardingStatus.APPROVED);
+        candidateRepository.save(candidate);
+
+        // Notify candidate via email
+        eventPublisher.publishEvent(new CaseResolvedEvent(
+                candidate.getUser().getEmail(),
+                candidate.getFullName(),
+                true, // cleared
+                "Compliance screening cleared. Congratulations! You are now authorized to onboard."
+        ));
     }
 
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CONVERT_TO_CASE')")
     public Long convertToCase(Long alertId, Long officerId){
-       Alert alert = getAlertById(alertId);
+        Alert alert = getAlertById(alertId);
 
-       if (alert.getStatus() == AlertStatus.OPEN) {
-           alert.setStatus(AlertStatus.IN_REVIEW);
-           alert.setAcknowledgedBy(officerId);
-           alert.setAcknowledgedAt(Instant.now());
-       }
+        if (alert.getStatus() == AlertStatus.OPEN) {
+            alert.setStatus(AlertStatus.IN_REVIEW);
+            alert.setAcknowledgedBy(officerId);
+            alert.setAcknowledgedAt(Instant.now());
+        }
 
-       validateAlertOwnership(alert, officerId);
+        validateAlertOwnership(alert, officerId);
 
-       alert.setStatus(AlertStatus.CONVERTED_TO_CASE);
-       alertRepository.save(alert);
+        alert.setStatus(AlertStatus.CONVERTED_TO_CASE);
+        alertRepository.save(alert);
 
         // 2. Start the Case Clock (e.g., 5-day SLA)
         Case investigationCase = Case.builder()
@@ -175,7 +189,7 @@ public class AlertServiceImpl implements AlertService {
             // 1. Only create alerts for MEDIUM or HIGH risk
             if (screeningResult.getRiskLevel() != RiskLevel.MEDIUM && screeningResult.getRiskLevel() != RiskLevel.HIGH) {
                 log.debug("Skipping alert creation for candidateId={} — risk level is {}",
-                    screeningResult.getCandidate().getId(), screeningResult.getRiskLevel());
+                        screeningResult.getCandidate().getId(), screeningResult.getRiskLevel());
                 return;
             }
 
@@ -191,10 +205,10 @@ public class AlertServiceImpl implements AlertService {
                     .distinct()
                     .collect(Collectors.toList());
 
-            // 5. Get SLA hours from SystemConfig (default 48 hours per requirements)
-            Integer slaHours = systemConfigService.getInt(
-                    ConfigConstants.SLA_HOURS,
-                    ConfigConstants.Defaults.SLA_HOURS);
+            // 5. Get SLA minutes from SystemConfig (default 30 minutes per requirements)
+            Integer slaMinutes = systemConfigService.getInt(
+                    ConfigConstants.SLA_MINUTES,
+                    ConfigConstants.Defaults.SLA_MINUTES);
 
             // 6. Create the Alert entity
             Alert alert = Alert.builder()
@@ -203,7 +217,7 @@ public class AlertServiceImpl implements AlertService {
                     .severity(severity)
                     .status(AlertStatus.OPEN)  // Starts in OPEN state — waiting for L1 Officer
                     .matchedCategories(matchedCategories)
-                    .slaDeadline(Instant.now().plus(slaHours, ChronoUnit.HOURS))
+                    .slaDeadline(Instant.now().plus(slaMinutes, ChronoUnit.MINUTES))
                     .isSlaBreached(false)
                     .build();
 
@@ -213,8 +227,8 @@ public class AlertServiceImpl implements AlertService {
             // 8. Publish event for email notification
             publishAlertNotificationEvent(savedAlert, candidate);
 
-            log.info("Alert ID {} created for candidateId={} with severity={} and SLA deadline in {} hours",
-                    savedAlert.getId(), candidate.getId(), severity, slaHours);
+            log.info("Alert ID {} created for candidateId={} with severity={} and SLA deadline in {} minutes",
+                    savedAlert.getId(), candidate.getId(), severity, slaMinutes);
 
         } catch (Exception ex) {
             log.error("Failed to create alert from screening result ID: {}", screeningResult.getId(), ex);
@@ -266,5 +280,15 @@ public class AlertServiceImpl implements AlertService {
                     officerId, alert.getId(), alert.getAcknowledgedBy());
             throw new UnauthorizedAccessException("You cannot process this alert because it is locked by another officer.");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ALERT_VIEW')")
+    public List<AlertDetailDto> getBreachedAlerts() {
+        return alertRepository.findByIsSlaBreachedTrueAndStatusNot(AlertStatus.CLOSED)
+                .stream()
+                .map(alertMapper::toDto)
+                .toList();
     }
 }

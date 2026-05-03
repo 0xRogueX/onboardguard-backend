@@ -55,5 +55,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     """)
     List<Alert> findOpenAlertsForQueue(@Param("status") AlertStatus status);
 
+    List<Alert> findByIsSlaBreachedTrueAndStatusNot(AlertStatus status);
+
     Page<Alert> findByStatusOrderBySlaDeadlineAsc(AlertStatus status, Pageable pageable);
 }

@@ -13,7 +13,7 @@ public interface CandidateDocumentService {
 
     DocumentResponseDto reUploadDocument(MultipartFile file, CandidateDocumentType candidateDocumentType);
 
-    List<DocumentResponseDto> getCandidateDocuments();
+    List<DocumentResponseDto> getCandidateDocuments(com.onboardguard.candidate.enums.DocumentStatus status);
 
     DocumentResponseDto mapToResponseWithUrl(CandidateDocument document);
 }

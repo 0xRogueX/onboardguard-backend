@@ -178,10 +178,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
             }
 
             // Organisation - fuzzy allowed (Advanced extends Basic's ORG_EXACT)
-            // FIX-4: use getOrganizationName() for both null-guard and match call.
-            //        advancedNameMatch() normalises internally, so passing the raw
-            //        value is correct and consistent with how candidateName is passed
-            //        in checkNameMatch() above.
             if (isNotBlank(c.getOrganizationName()) && isNotBlank(entry.getOrganizationName())) {
                 NameMatchResult orgResult = nameMatchingUtil.advancedNameMatch(
                         c.getOrganizationName(),
@@ -283,11 +279,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
     }
 
     // CORROBORATION LEVEL RESOLUTION
-    /**
-     * Determines the highest corroboration level based on which field types
-     * produced a match for a single watchlist entry.
-     * Called after all field checks for the entry are complete.
-     */
     private CorroborationLevel resolveCorroborationFromMatches(List<MatchDetailDto> matches) {
         boolean hasPan     = matches.stream().anyMatch(m -> m.getMatchType() == MatchType.PAN_EXACT);
         boolean hasAadhaar = matches.stream().anyMatch(m -> m.getMatchType() == MatchType.AADHAAR_EXACT);
