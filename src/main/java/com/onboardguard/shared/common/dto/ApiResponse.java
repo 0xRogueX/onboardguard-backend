@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -45,7 +46,7 @@ public class ApiResponse<T> {
     }
 
     // Helper for validation errors
-    public static <T> ApiResponse<T> validationError(String message, java.util.Map<String, String> errors) {
+    public static <T> ApiResponse<T> validationError(String message, Map<String, String> errors) {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
