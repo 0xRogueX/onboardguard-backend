@@ -42,8 +42,9 @@ public class CandidateDocumentController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DocumentResponseDto>>> getMyDocuments() {
-        List<DocumentResponseDto> documents = documentService.getCandidateDocuments();
+    public ResponseEntity<ApiResponse<List<DocumentResponseDto>>> getMyDocuments(
+            @RequestParam(value = "status", required = false) com.onboardguard.candidate.enums.DocumentStatus status) {
+        List<DocumentResponseDto> documents = documentService.getCandidateDocuments(status);
         return ResponseEntity.ok(ApiResponse.success("Documents fetched successfully", documents));
     }
 }

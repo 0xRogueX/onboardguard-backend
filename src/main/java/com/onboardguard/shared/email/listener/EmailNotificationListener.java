@@ -69,9 +69,9 @@ public class EmailNotificationListener {
 
         Context context = new Context();
         context.setVariable("candidateName", event.candidateName());
-        context.setVariable("documentType", event.documentType());
+        context.setVariable("candidateDocumentType", event.documentType());
         context.setVariable("reason", event.reason());
-        context.setVariable("uploadUrl", "https://onboardguard.com/candidate/documents");
+        context.setVariable("uploadUrl", "http://localhost:4200/candidate/reupload");
 
         emailService.sendHtmlEmail(event.candidateEmail(), "Action Required: Re-upload " + event.documentType(), "doc-rejection", context);
     }

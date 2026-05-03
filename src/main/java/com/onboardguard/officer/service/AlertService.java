@@ -25,4 +25,6 @@ public interface AlertService {
      * Automatically computes SLA deadline from SystemConfig and publishes AlertGeneratedEvent.
      */
     void createAlert(ScreeningResult screeningResult);
+
+    List<AlertDetailDto> getBreachedAlerts();
 }

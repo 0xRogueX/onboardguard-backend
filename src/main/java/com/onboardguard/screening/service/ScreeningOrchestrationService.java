@@ -20,6 +20,9 @@ import com.onboardguard.watchlist.repository.WatchlistEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.onboardguard.candidate.enums.OnboardingStatus;
+import com.onboardguard.shared.common.events.CaseResolvedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +55,7 @@ public class ScreeningOrchestrationService {
     private final RiskScoringEngine riskScoringEngine;
     private final ScreeningMapper screeningMapper;
     private final AlertService alertService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @PreAuthorize("hasAnyAuthority('SCREENING_RESCREEN','SCREENING_CANDIDATE')")
@@ -106,12 +110,25 @@ public class ScreeningOrchestrationService {
             if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
                     || resultDto.getRiskLevel() == RiskLevel.HIGH) {
                 alertService.createAlert(savedResult);
+            } else {
+                // 11. AUTO-APPROVE if LOW risk
+                candidate.setOnboardingStatus(OnboardingStatus.APPROVED);
+                candidateRepository.save(candidate);
+
+                // 12. Send clearance email
+                eventPublisher.publishEvent(new CaseResolvedEvent(
+                        candidate.getUser().getEmail(),
+                        candidate.getFullName(),
+                        true,
+                        "Onboarding documents verified and compliance screening cleared. You are authorized to begin your onboarding journey!"
+                ));
+                log.info("Candidate ID {} AUTO-APPROVED — low risk screening.", candidateId);
             }
 
             log.info("Screening complete candidateId={} score={} level={}",
                     candidateId, resultDto.getRiskScore(), resultDto.getRiskLevel());
 
-            // 11. Return summary DTO (no match list — caller fetches matches separately)
+            // 13. Return summary DTO (no match list — caller fetches matches separately)
             return screeningMapper.toScreeningResultDtoSummary(savedResult);
 
         } catch (Exception ex) {

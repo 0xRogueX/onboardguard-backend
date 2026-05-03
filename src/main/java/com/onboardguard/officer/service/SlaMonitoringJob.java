@@ -27,13 +27,13 @@ public class SlaMonitoringJob {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * Runs strictly every 30 minutes (e.g., 12:00, 12:30, 1:00, 1:30).
-     * Cron expression breakdown: "0 0/30 * * * *" -> At 0 seconds, every 30 minutes, every hour, every day.
+     * Runs strictly every 3 minutes.
+     * Cron expression breakdown: "0 0/3 * * * *" -> At 0 seconds, every 3 minutes, every hour, every day.
      */
-    @Scheduled(cron = "0 0/30 * * * *")
+    @Scheduled(cron = "0 0/3 * * * *")
     @Transactional
     public void monitorSlaBreaches() {
-        log.info("[SLA MONITOR] Starting bi-hourly SLA check...");
+        log.info("[SLA MONITOR] Starting 3-minute SLA check...");
         Instant now = Instant.now();
 
         try {

@@ -89,4 +89,10 @@ public class AlertController {
 
         return ResponseEntity.ok(ApiResponse.success("Alert converted to Case successfully.", newCaseId));
     }
+
+    @GetMapping("/breached")
+    public ResponseEntity<ApiResponse<List<AlertDetailDto>>> getBreachedAlerts() {
+        List<AlertDetailDto> breachedAlerts = alertService.getBreachedAlerts();
+        return ResponseEntity.ok(ApiResponse.success("Breached alerts retrieved successfully.", breachedAlerts));
+    }
 }
