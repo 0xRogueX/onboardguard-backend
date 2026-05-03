@@ -170,6 +170,5 @@ HELP.md
 .cache/
 
 export.sh
+export.ps1
 project_dump.md
-
-ALERT_GENERATION_FIX.md
