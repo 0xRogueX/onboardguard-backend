@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Advanced screening with four layers (superset of BasicScreeningStrategy):
@@ -90,8 +88,9 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
             allMatches.addAll(entryMatches);
         }
 
-        // RiskScoringEngine sums contributions and caps at 100
-        double rawScore   = riskScoringEngine.calculateScore(allMatches);
+        List<MatchDetailDto> deduped = deduplicateBySameCategoryAndName(allMatches);
+        double rawScore = riskScoringEngine.calculateScore(deduped);
+
         double finalScore = Math.min(rawScore, 100.0);
         RiskLevel riskLevel = riskScoringEngine.classify(finalScore);
         ScreeningStatus status = riskLevel == RiskLevel.LOW
@@ -106,7 +105,7 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                 .riskScore(finalScore)
                 .riskLevel(riskLevel)
                 .status(status)
-                .matches(allMatches)
+                .matches(deduped)
                 .totalEntriesChecked(activeEntries.size())
                 .screeningStartedAt(startedAt)
                 .screeningCompletedAt(Instant.now())
@@ -295,16 +294,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
         return                           CorroborationLevel.NAME_ONLY;
     }
 
-    /**
-     * Rebuilds every MatchDetailDto for this entry with the final corroboration
-     * level and the correct multiplier-adjusted contribution.
-     *
-     * Why rebuild instead of mutate:
-     *   MatchDetailDto uses @Builder — no setters.  Rebuilding is the clean approach
-     *   and avoids accidental mutation of a DTO that may already be referenced.
-     *
-     * Category bonus is applied only to NAME_* rows — never to PAN/Aadhaar rows.
-     */
     private List<MatchDetailDto> recomputeWithCorroboration(
             List<MatchDetailDto> original,
             CorroborationLevel corr,
@@ -385,6 +374,71 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                 .scoreContribution(contribution)    // placeholder - recomputed later
                 .corroborationLevel(CorroborationLevel.NAME_ONLY) // placeholder
                 .build();
+    }
+
+    // Group all matched entries by: normalizedPrimaryName + categoryCode
+    private List<MatchDetailDto> deduplicateBySameCategoryAndName(List<MatchDetailDto> allMatches) {
+        if (allMatches == null || allMatches.isEmpty()) return allMatches;
+
+        // Group name/alias rows by (category + watchlistPrimaryName normalized)
+        // Key = "FRAUD::rohit sharma"
+        Map<String, Double> maxCredibilityByKey = new HashMap<>();
+
+        for (MatchDetailDto m : allMatches) {
+            boolean isNameRow = m.getMatchType().name().startsWith("NAME");
+            if (!isNameRow) continue; // only group by name rows — corroborating rows follow their name row
+
+            String key = m.getWatchlistCategory().toUpperCase()
+                    + "::" + nameMatchingUtil.normalize(m.getWatchlistPrimaryName());
+
+            maxCredibilityByKey.merge(key, m.getWatchlistSourceCredibility(), Math::max);
+        }
+
+        // Now rebuild list, marking suppressed where credibility < max for that group
+        List<MatchDetailDto> result = new ArrayList<>();
+        // Track which watchlistEntryIds are suppressed (all their corroborating rows too)
+        Set<Long> suppressedEntryIds = new HashSet<>();
+
+        // First pass: determine which entryIds are suppressed
+        for (MatchDetailDto m : allMatches) {
+            boolean isNameRow = m.getMatchType().name().startsWith("NAME");
+            if (!isNameRow) continue;
+
+            String key = m.getWatchlistCategory().toUpperCase()
+                    + "::" + nameMatchingUtil.normalize(m.getWatchlistPrimaryName());
+
+            double maxCred = maxCredibilityByKey.getOrDefault(key, 1.0);
+            if (m.getWatchlistSourceCredibility() < maxCred) {
+                suppressedEntryIds.add(m.getWatchlistEntryId());
+            }
+        }
+
+        // Second pass: rebuild all DTOs with correct suppressed flag and zeroed score
+        for (MatchDetailDto m : allMatches) {
+            boolean suppress = suppressedEntryIds.contains(m.getWatchlistEntryId());
+            result.add(MatchDetailDto.builder()
+                    // copy all existing fields:
+                    .watchlistEntryId(m.getWatchlistEntryId())
+                    .watchlistPrimaryName(m.getWatchlistPrimaryName())
+                    .watchlistCategory(m.getWatchlistCategory())
+                    .watchlistSeverity(m.getWatchlistSeverity())
+                    .watchlistSourceName(m.getWatchlistSourceName())
+                    .watchlistSourceCredibility(m.getWatchlistSourceCredibility())
+                    .matchType(m.getMatchType())
+                    .candidateFieldValue(m.getCandidateFieldValue())
+                    .watchlistFieldValue(m.getWatchlistFieldValue())
+                    .similarityScore(m.getSimilarityScore())
+                    .basePoints(m.getBasePoints())
+                    .sourceCredibilityWeight(m.getSourceCredibilityWeight())
+                    .corroborationMultiplier(m.getCorroborationMultiplier())
+                    .categoryBonus(m.getCategoryBonus())
+                    // suppressed entries contribute 0 to score, stored for audit only
+                    .scoreContribution(suppress ? 0.0 : m.getScoreContribution())
+                    .corroborationLevel(m.getCorroborationLevel())
+                    .suppressed(suppress)
+                    .build());
+        }
+        return result;
     }
 
     private boolean isNotBlank(String s) {

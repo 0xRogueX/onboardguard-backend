@@ -35,4 +35,6 @@ public class MatchDetailDto {
     private Double scoreContribution;
 
     private CorroborationLevel corroborationLevel;
+
+    private Boolean suppressed; // true = stored for audit, not added to score
 }

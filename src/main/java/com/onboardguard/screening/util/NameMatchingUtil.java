@@ -5,40 +5,25 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * All name-comparison logic lives here so both strategies share it.
- *
- * Jaro-Winkler is used for fuzzy matching because:
- * - It gives extra weight to prefix matches ("Sharma" vs "Shrma") which is
- *   common in name typos.
- * - It handles short strings better than Levenshtein normalized distance.
- * - It runs in O(n*m) — fast enough for screening 100+ watchlist entries.
- */
 @Component
 public class NameMatchingUtil {
 
-    /**
-     * Normalize a name for comparison:
-     * - Smartly separates unspaced initials (e.g., "RS" -> "R S")
-     * - lowercase & trim
-     * - converts dots to spaces (e.g., "R.S." -> "R S")
-     * - collapses multiple spaces to one
-     * - removes all punctuation
-     */
     public String normalize(String name) {
         if (name == null) return "";
 
-        // Handle unspaced capital initials (e.g., "RS Sharma" -> "R S Sharma")
-        // This Regex says: Find an Uppercase letter that is immediately followed by another Uppercase letter
-        String preProcessed = name.replaceAll("([A-Z])(?=[A-Z])", "$1 ");
+        // Step 1: lowercase + trim
+        String s = name.toLowerCase().trim();
 
-        return preProcessed.toLowerCase()
-                .trim()
-                // Convert dots to spaces so isExactMatch works for "A.B." -> "A. B. "
-                .replace(".", " ")
-                .replaceAll("\\s+", " ")
-                // remove everything except letters, digits, spaces, and dots
-                .replaceAll("[^a-z0-9 .]", "");
+        // Step 2: dots -> spaces
+        s = s.replace(".", " ");
+
+        // Step 3: collapse spaces
+        s = s.replaceAll("\\s+", " ").trim();
+
+        // Step 4: remove everything except lowercase letters, digits, spaces
+        s = s.replaceAll("[^a-z0-9 ]", "");
+
+        return s;
     }
 
     public boolean isExactMatch(String a, String b) {
@@ -46,10 +31,63 @@ public class NameMatchingUtil {
         return normalize(a).equals(normalize(b));
     }
 
+    public boolean isFuzzyMatch(String a, String b, double threshold) {
+        return jaroWinkler(a, b) >= threshold;
+    }
+
     /**
-     * Jaro-Winkler similarity between two strings.
-     * Returns 0.0 (no similarity) to 1.0 (identical).
+     * Full advanced name match. Three techniques applied in priority order:
+     *
+     *   Priority 1 — Normalized exact match
+     *     "Rohit Sharma" == "ROHIT SHARMA" == "  rohit  sharma  " → exact(1.0)
+     *
+     *   Priority 2 — Initials expansion (4-rule algorithm, BUG-3 fix)
+     *     "R.S. Sharma"  vs "Rohit Suresh Sharma" → fuzzy(0.90)
+     *     "R. Sharma"    vs "Rohit Sharma"         → fuzzy(0.90)
+     *     "Rohit Sharma" vs "R.S. Sharma"          → fuzzy(0.90)  ← both directions
+     *     "Lalu P Yadav" vs "Lalu Prasad Yadav"    → fuzzy(0.90)
+     *
+     *   Priority 3 — Whole-name Jaro-Winkler
+     *     "Rohit Shrma"  vs "Rohit Sharma"          → fuzzy(~0.97)
+     *     "Sharma"       vs "Sarma"                 → fuzzy(~0.93)
+     *
+     *   No match:
+     *     "A. Singh"     vs "B. Singh"              → noMatch  ← was FP, now fixed
+     *     "Priya Mehta"  vs "Rohit Sharma"          → noMatch
      */
+    public NameMatchResult advancedNameMatch(String candidateName,
+                                             String watchlistName,
+                                             double threshold) {
+        if (candidateName == null || watchlistName == null) {
+            return NameMatchResult.noMatch();
+        }
+
+        String nc = normalize(candidateName);
+        String nw = normalize(watchlistName);
+
+        if (nc.isEmpty() || nw.isEmpty()) {
+            return NameMatchResult.noMatch();
+        }
+
+        // Priority 1: exact
+        if (nc.equals(nw)) {
+            return NameMatchResult.exactMatch();
+        }
+
+        // Priority 2: initials expansion (both directions handled inside)
+        if (isInitialsExpansionMatch(nc, nw)) {
+            return NameMatchResult.fuzzy(0.90);
+        }
+
+        // Priority 3: whole-name Jaro-Winkler
+        double sim = jaroWinkler(nc, nw);
+        if (sim >= threshold) {
+            return NameMatchResult.fuzzy(sim);
+        }
+
+        return NameMatchResult.noMatch();
+    }
+
     public double jaroWinkler(String a, String b) {
         if (a == null || b == null) return 0.0;
         String s1 = normalize(a);
@@ -57,7 +95,7 @@ public class NameMatchingUtil {
         if (s1.equals(s2)) return 1.0;
         if (s1.isEmpty() || s2.isEmpty()) return 0.0;
 
-        double jaro = jaro(s1, s2);
+        double jaroScore = jaro(s1, s2);
 
         // Winkler prefix bonus — up to 4 matching prefix characters
         int prefixLen = 0;
@@ -67,116 +105,131 @@ public class NameMatchingUtil {
             else break;
         }
 
-        return jaro + (prefixLen * 0.1 * (1.0 - jaro));
+        return jaroScore + (prefixLen * 0.1 * (1.0 - jaroScore));
+    }
+
+    public boolean isInitialsExpansionMatch(String normA, String normB) {
+        if (normA == null || normB == null) return false;
+
+        List<String> tA = tokenize(normA);
+        List<String> tB = tokenize(normB);
+
+        // direction A: tA is abbreviated, tB is full
+        if (matchInitials(tA, tB)) return true;
+
+        // direction B: tB is abbreviated, tA is full
+        if (matchInitials(tB, tA)) return true;
+
+        return false;
     }
 
     /**
-     * Whether two strings are a fuzzy match given a threshold (0.0–1.0).
-     * Default threshold from config is 0.80.
+     * 4-rule strict initials match.
+     *
+     * 'abbr' is the abbreviated / shorter side (may have initial tokens).
+     * 'full' is the fuller side (expected to have complete tokens).
+     *
+     * RULE 1 — Minimum length:
+     *   Both sides must have ≥ 2 tokens. Single-word names ("Sharma") cannot
+     *   be an initials pattern — they are handled by JW fuzzy.
+     *
+     * RULE 2 — First token must match:
+     *   abbr[0] vs full[0]. If one is an initial the other's first letter must
+     *   equal it. If both are full tokens they must be equal.
+     *   → Prevents "A. Singh" matching "B. Singh" (first letters differ).
+     *
+     * RULE 3 — Last token must match:
+     *   abbr[last] vs full[last]. Same matching rule as Rule 2.
+     *   → The surname is the strongest anchor in Indian names.
+     *
+     * RULE 4 — Middle tokens must be consistent:
+     *   Both sides may have 0 or more middle tokens (everything except first and last).
+     *   If only one side has middle tokens, they must ALL be initials (the other
+     *   side simply doesn't record the middle name — that's fine).
+     *   If both sides have middle tokens, align them pairwise and apply the same
+     *   initial/full check as Rules 2–3. Extra unmatched positions must be initials.
+     *
+     * Verified scenarios (abbreviated → full):
+     *   ["r","sharma"]       vs ["rohit","sharma"]          → Rules 2,3 pass ✓
+     *   ["r","s","sharma"]   vs ["rohit","sharma"]          → Rules 2,3 pass, rule4 "s" is
+     *                                                          extra initial → ok ✓
+     *   ["r","s","sharma"]   vs ["rohit","suresh","sharma"] → Rules 2,3,4 pass ✓
+     *   ["rohit","sharma"]   vs ["r","s","sharma"]          → Rules 2,3 pass (reversed) ✓
+     *   ["a","singh"]        vs ["b","singh"]               → Rule 2 FAILS ✓ (no FP)
+     *   ["lalu","p","yadav"] vs ["lalu","prasad","yadav"]   → Rules 2,3,4 pass ✓
+     *   ["abu","s"]          vs ["abu","salem"]             → Rules 2,3 pass ✓
      */
-    public boolean isFuzzyMatch(String a, String b, double threshold) {
-        return jaroWinkler(a, b) >= threshold;
+    private boolean matchInitials(List<String> abbr, List<String> full) {
+
+        // RULE 1: both must have at least 2 tokens
+        if (abbr.size() < 2 || full.size() < 2) return false;
+
+        // RULE 2: first token must match
+        if (!tokensMatch(abbr.get(0), full.get(0))) return false;
+
+        // RULE 3: last token must match
+        if (!tokensMatch(abbr.get(abbr.size() - 1), full.get(full.size() - 1))) return false;
+
+        // RULE 4: middle tokens (indices 1 .. size-2)
+        List<String> abbrMiddle = abbr.subList(1, abbr.size() - 1);
+        List<String> fullMiddle = full.subList(1, full.size() - 1);
+
+        return middleTokensConsistent(abbrMiddle, fullMiddle);
     }
 
-    /**
-     * Initials-expansion match.
-     *
-     * "R.S. Sharma" vs "Rohit S. Sharma"
-     *  → tokens: ["r.", "s.", "sharma"]  vs ["rohit", "s.", "sharma"]
-     *  → "r." is an initial, check first char of "rohit" → 'r' == 'r' ✓
-     *  → "s." is an initial, compare with "s." directly → match ✓
-     *  → "sharma" vs "sharma" → exact ✓
-     *  → Result: MATCH
-     *
-     * Returns true only if ALL tokens can be matched (strict full-name match).
-     */
-    public boolean isInitialsExpansionMatch(String candidateName, String watchlistName) {
-        if (candidateName == null || watchlistName == null) return false;
+    private boolean middleTokensConsistent(List<String> abbrMid, List<String> fullMid) {
 
-        List<String> cTokens = tokenize(normalize(candidateName));
-        List<String> wTokens = tokenize(normalize(watchlistName));
+        // Case A: both empty
+        if (abbrMid.isEmpty() && fullMid.isEmpty()) return true;
 
-        // Must have the same number of tokens to be a valid match
-        if (cTokens.size() != wTokens.size()) return false;
+        // Case B: one side has no middle tokens - the other's must all be initials
+        if (abbrMid.isEmpty()) {
+            return fullMid.stream().allMatch(this::isInitial);
+        }
+        if (fullMid.isEmpty()) {
+            return abbrMid.stream().allMatch(this::isInitial);
+        }
 
-        for (int i = 0; i < cTokens.size(); i++) {
-            String ct = cTokens.get(i);
-            String wt = wTokens.get(i);
+        // Case C: both have middle tokens - align pairwise
+        int minLen = Math.min(abbrMid.size(), fullMid.size());
+        for (int i = 0; i < minLen; i++) {
+            if (!tokensMatch(abbrMid.get(i), fullMid.get(i))) return false;
+        }
 
-            if (isInitial(ct)) {
-                // candidate token is an initial - check against first letter of watchlist token
-                char initial = ct.charAt(0);
-                if (wt.isEmpty() || wt.charAt(0) != initial) return false;
-            } else if (isInitial(wt)) {
-                // watchlist token is an initial - check against first letter of candidate token
-                char initial = wt.charAt(0);
-                if (ct.isEmpty() || ct.charAt(0) != initial) return false;
-            } else {
-                // Both are full tokens - require exact match here
-                // (fuzzy is handled separately at the token level via isFuzzyMatch)
-                if (!ct.equals(wt)) return false;
+        // Any excess tokens on either side must be initials
+        if (abbrMid.size() > fullMid.size()) {
+            for (int i = minLen; i < abbrMid.size(); i++) {
+                if (!isInitial(abbrMid.get(i))) return false;
+            }
+        } else if (fullMid.size() > abbrMid.size()) {
+            for (int i = minLen; i < fullMid.size(); i++) {
+                if (!isInitial(fullMid.get(i))) return false;
             }
         }
+
         return true;
     }
 
-    /**
-     * Full advanced name comparison combining initials expansion AND fuzzy matching.
-     *
-     * First tries initials expansion (handles "R.S. Sharma" vs "Rohit S. Sharma").
-     * Then falls back to whole-name Jaro-Winkler (handles "Rohit Shrma" vs "Rohit Sharma").
-     *
-     * Returns a NameMatchResult containing whether it matched and the similarity score.
-     */
-    public NameMatchResult advancedNameMatch(String candidateName, String watchlistName, double threshold) {
-        if (candidateName == null || watchlistName == null) {
-            return NameMatchResult.noMatch();
+    private boolean tokensMatch(String a, String b) {
+        boolean aIsInitial = isInitial(a);
+        boolean bIsInitial = isInitial(b);
+
+        if (!aIsInitial && !bIsInitial) {
+            // Both full tokens - exact equality required
+            return a.equals(b);
         }
-
-        String normCandidate = normalize(candidateName);
-        String normWatchlist = normalize(watchlistName);
-
-        // 1. Exact match
-        if (normCandidate.equals(normWatchlist)) {
-            return NameMatchResult.exactMatch();
+        if (aIsInitial && bIsInitial) {
+            // Both initials - first letters must match
+            return a.charAt(0) == b.charAt(0);
         }
-
-        // 2. Initials expansion
-        if (isInitialsExpansionMatch(normCandidate, normWatchlist)) {
-            // Treat initials expansion as high-confidence — score it as fuzzy with 0.90
-            return NameMatchResult.fuzzy(0.90);
-        }
-
-        // 3. Whole-name Jaro-Winkler
-        double sim = jaroWinkler(normCandidate, normWatchlist);
-        if (sim >= threshold) {
-            return NameMatchResult.fuzzy(sim);
-        }
-
-        return NameMatchResult.noMatch();
+        // One initial, one full - initial's letter must equal full token's first char
+        String initial = aIsInitial ? a : b;
+        String fullTok = aIsInitial ? b : a;
+        return !fullTok.isEmpty() && initial.charAt(0) == fullTok.charAt(0);
     }
 
     /**
-     * Split a normalized name into tokens by space.
-     */
-    private List<String> tokenize(String name) {
-        List<String> tokens = new ArrayList<>();
-        for (String t : name.split(" ")) {
-            if (!t.isBlank()) tokens.add(t.trim());
-        }
-        return tokens;
-    }
-
-    /**
-     * A token is considered an initial if it is a single letter optionally
-     * followed by a dot. Examples: "r", "r.", "s."
-     */
-    private boolean isInitial(String token) {
-        return token.matches("^[a-z]\\.?$");
-    }
-
-    /**
-     * Core Jaro similarity (without the Winkler prefix adjustment).
+     * Core Jaro similarity (no Winkler prefix yet).
      */
     private double jaro(String s1, String s2) {
         int len1 = s1.length();
@@ -216,20 +269,27 @@ public class NameMatchingUtil {
 
         return (((double) matches / len1)
                 + ((double) matches / len2)
-                + ((double) (matches - transpositions / 2) / matches)) / 3.0;
+                + ((matches - (double) transpositions / 2.0) / matches)) / 3.0;
     }
 
-    // Inner result type
+    private List<String> tokenize(String name) {
+        List<String> tokens = new ArrayList<>();
+        for (String t : name.split(" ")) {
+            if (!t.isBlank()) tokens.add(t);
+        }
+        return tokens;
+    }
 
-    /**
-     * Immutable result of an advanced name comparison.
-     */
+    private boolean isInitial(String token) {
+        return token != null && token.matches("^[a-z]\\.?$");
+    }
+
+
     public record NameMatchResult(
             boolean matched,
             boolean exact,
-            double similarity
+            double  similarity
     ) {
-
         public static NameMatchResult noMatch() {
             return new NameMatchResult(false, false, 0.0);
         }

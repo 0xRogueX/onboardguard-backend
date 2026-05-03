@@ -87,15 +87,15 @@ public class ScreeningMatch extends BaseEntity {
     @Column(nullable = false)
     private String watchlistEntryPrimaryNameSnapshot;
 
-    // Snapshot of which category the entry belonged to
     @Column(nullable = false)
     private String watchlistCategorySnapshot;
 
-    // Snapshot of severity at match time
     @Column(nullable = false)
     private String watchlistSeveritySnapshot;
 
-    // Snapshot of source name
     @Column(nullable = false)
     private String watchlistSourceNameSnapshot;
+
+    @Column(nullable = false)
+    private Boolean suppressed = false;
 }
