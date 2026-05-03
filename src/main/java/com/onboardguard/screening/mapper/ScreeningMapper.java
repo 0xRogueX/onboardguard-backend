@@ -257,7 +257,7 @@ public interface ScreeningMapper {
     default ScreeningStatus riskLevelToStatus(RiskLevel level) {
         if (level == null) return ScreeningStatus.PENDING;
         if (level == RiskLevel.LOW) return ScreeningStatus.CLEAR;
-        if (level == RiskLevel.MEDIUM) return ScreeningStatus.REVIEW_NEEDED;
+        if (level == RiskLevel.MEDIUM) return ScreeningStatus.FLAGGED;
         return ScreeningStatus.FLAGGED;
     }
 

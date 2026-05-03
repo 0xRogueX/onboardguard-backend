@@ -24,9 +24,7 @@ public class ScreeningQueryService {
     private final ScreeningMatchRepository screeningMatchRepository;
     private final ScreeningMapper screeningMapper;
 
-    /**
-     * Full screening history for a candidate — summary DTOs, no match detail.
-     */
+    // Full screening history for a candidate — summary DTOs, no match detail.
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public List<ScreeningResultDto> getHistory(Long candidateId) {
@@ -35,9 +33,6 @@ public class ScreeningQueryService {
         return screeningMapper.toScreeningResultDtoSummaryList(results);
     }
 
-    /**
-     * Full match breakdown for one specific screening result.
-     */
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public List<MatchDetailDto> getMatchDetails(Long resultId) {
@@ -47,19 +42,16 @@ public class ScreeningQueryService {
         );
     }
 
-    /**
-     * Latest screening result for a candidate — full DTO including matches.
-     * * NOTE: The @Transactional(readOnly = true) annotation here keeps the Hibernate
-     * Session open. When the mapper calls getMatches(), it will smoothly fetch
-     * them from the database without throwing a LazyInitializationException!
-     */
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public ScreeningResultDto getLatest(Long candidateId) {
         log.debug("Fetching latest screening result for candidateId={}", candidateId);
 
-        return screeningResultRepository.findTopByCandidateIdOrderByCreatedAtDesc(candidateId)
-                .map(screeningMapper::toScreeningResultDto)
-                .orElseThrow(() -> new ResourceNotFoundException("No screening result found for candidate: " + candidateId));
+        ScreeningResult result = screeningResultRepository
+                .findLatestWithMatches(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No screening result found for candidate: " + candidateId));
+
+        return screeningMapper.toScreeningResultDto(result);
     }
 }

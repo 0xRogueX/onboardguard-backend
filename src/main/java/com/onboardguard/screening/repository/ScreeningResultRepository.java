@@ -16,13 +16,21 @@ public interface ScreeningResultRepository extends JpaRepository<ScreeningResult
     // All screenings for a candidate (history tab)
     List<ScreeningResult> findByCandidateIdOrderByCreatedAtDesc(Long candidateId);
 
-    // Used by analytics dashboard — count by status
+    // Used by analytics dashboard - count by status
     long countByStatus(ScreeningStatus status);
 
-    // Used by analytics — flagged vs cleared breakdown
+    // Used by analytics —-flagged vs cleared breakdown
     @Query("SELECT sr.riskLevel, COUNT(sr) FROM ScreeningResult sr GROUP BY sr.riskLevel")
     List<Object[]> countGroupedByRiskLevel();
 
     // Used for re-screening check — is there an IN_PROGRESS run?
     boolean existsByCandidateIdAndStatus(Long candidateId, ScreeningStatus status);
+
+    @Query("""
+        SELECT sr FROM ScreeningResult sr
+        LEFT JOIN FETCH sr.matches
+        WHERE sr.candidate.id = :candidateId
+        ORDER BY sr.createdAt DESC
+    """)
+    Optional<ScreeningResult> findLatestWithMatches(Long candidateId);
 }
