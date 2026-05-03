@@ -10,6 +10,7 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.security.SecurityUtils;
@@ -19,6 +20,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.enums.OnboardingStatus;
+import com.onboardguard.candidate.repository.CandidateRepository;
+import com.onboardguard.shared.common.enums.CaseOutcome;
+import com.onboardguard.shared.email.service.EmailService;
+import org.thymeleaf.context.Context;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,6 +40,8 @@ public class CaseServiceImpl implements CaseService {
     private final CaseMapper caseMapper;
     private final SecurityUtils securityUtils;
     private final ApplicationEventPublisher eventPublisher;
+    private final CandidateRepository candidateRepository;
+    private final EmailService emailService;
 
     // 1. DASHBOARD QUEUES
     @Override
@@ -79,10 +89,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.OPEN) {
-            throw new IllegalStateException("Only OPEN cases can be claimed.");
+            throw new BadRequestException("Only OPEN cases can be claimed.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("Case already claimed by another officer.");
         }
 
         // State Transition
@@ -121,7 +131,7 @@ public class CaseServiceImpl implements CaseService {
                 investigationCase.getId(), investigationCase.getStatus(), investigationCase.getAssignedOfficerId());
 
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
-            throw new IllegalStateException("Only IN_REVIEW cases can be escalated.");
+            throw new BadRequestException("Only IN_REVIEW cases can be escalated.");
         }
 
         validateCaseOwnership(investigationCase, l1OfficerId);
@@ -159,10 +169,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Only ESCALATED cases can be claimed by an L2 Checker.");
+            throw new BadRequestException("Only ESCALATED cases can be claimed by an L2 Checker.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("Case already claimed by another officer.");
         }
 
         // Lock to L2 Officer (stays ESCALATED, but drops off dashboard due to ID assignment)
@@ -193,7 +203,7 @@ public class CaseServiceImpl implements CaseService {
         Case investigationCase = getCaseById(caseId);
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Case must be in ESCALATED state to be resolved.");
+            throw new BadRequestException("Case must be in ESCALATED state to be resolved.");
         }
         validateCaseOwnership(investigationCase, l2OfficerId);
 
@@ -214,6 +224,42 @@ public class CaseServiceImpl implements CaseService {
         investigationCase.getNotes().add(resolutionNote);
         caseRepository.save(investigationCase);
         log.info("Case ID {} RESOLVED with outcome {} by L2 Officer {}", caseId, dto.outcome(), l2OfficerId);
+
+        // Reflect status on Candidate Dashboard/Tracking
+        updateCandidateOnboardingStatus(investigationCase.getCandidateId(), dto.outcome());
+
+        // Send Email to Candidate
+        sendResolutionEmail(investigationCase.getCandidateId(), dto.outcome(), dto.outcomeReason());
+    }
+
+    private void updateCandidateOnboardingStatus(Long candidateId, CaseOutcome outcome) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found for status update"));
+
+        if (outcome == CaseOutcome.CLEARED) {
+            candidate.setOnboardingStatus(OnboardingStatus.APPROVED);
+        } else {
+            candidate.setOnboardingStatus(OnboardingStatus.REJECTED);
+        }
+        candidateRepository.save(candidate);
+        log.info("Candidate ID {} onboarding status updated to {} based on case resolution.", candidateId, candidate.getOnboardingStatus());
+    }
+
+    private void sendResolutionEmail(Long candidateId, CaseOutcome outcome, String reason) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found for email notification"));
+
+        String toEmail = candidate.getUser().getEmail();
+        String fullName = candidate.getFullName();
+        String subject = outcome == CaseOutcome.CLEARED ? "Onboarding Approved - Welcome Aboard!" : "Onboarding Application Status Update";
+        String templateName = outcome == CaseOutcome.CLEARED ? "case-resolved-cleared" : "case-resolved-rejected";
+
+        Context context = new Context();
+        context.setVariable("candidateName", fullName);
+        context.setVariable("reason", reason);
+        context.setVariable("outcome", outcome.name());
+
+        emailService.sendHtmlEmail(toEmail, subject, templateName, context);
     }
 
 

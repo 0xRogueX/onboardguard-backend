@@ -272,7 +272,7 @@ public class AlertServiceImpl implements AlertService {
      */
     private void validateAlertOwnership(Alert alert, Long officerId) {
         if (alert.getStatus() != AlertStatus.IN_REVIEW) {
-            throw new IllegalStateException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
+            throw new BadRequestException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");
         }
 
         if (!officerId.equals(alert.getAcknowledgedBy())) {

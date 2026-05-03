@@ -10,6 +10,7 @@ import com.onboardguard.candidate.entity.CandidateDocument;
 import com.onboardguard.candidate.entity.CandidatePersonalDetail;
 import com.onboardguard.candidate.entity.CandidateProfessionalDetail;
 import com.onboardguard.candidate.enums.CandidateDocumentType;
+import com.onboardguard.candidate.enums.DocumentStatus;
 import org.mapstruct.*;
 
 import java.time.Instant;
@@ -39,7 +40,27 @@ public interface CandidateMapper {
     CandidateProfessionalDetail initProfessionalDetail(Candidate candidate);
 
     @Mapping(target = "isSubmitted", expression = "java(candidate.getFormSubmittedAt() != null)")
+    @Mapping(target = "documentStatuses", expression = "java(mapDocumentStatuses(candidate))")
     CandidateStatusResponseDto toStatusDto(Candidate candidate);
+
+    default java.util.Map<CandidateDocumentType, DocumentStatus> mapDocumentStatuses(Candidate candidate) {
+        if (candidate.getDocuments() == null) return null;
+        return candidate.getDocuments().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.onboardguard.candidate.entity.CandidateDocument::getCandidateDocumentType,
+                        com.onboardguard.candidate.entity.CandidateDocument::getStatus,
+                        (existing, replacement) -> replacement
+                ));
+    }
+
+    // Mappings for fetching profile details
+    @Mapping(target = "personalDetails", source = "personalDetail")
+    @Mapping(target = "professionalDetails", source = "professionalDetail")
+    @Mapping(target = "onboardingStatus", source = "onboardingStatus")
+    CandidateProfileResponseDto toProfileDto(Candidate candidate);
+
+    PersonalDetailsRequestDto toPersonalDto(CandidatePersonalDetail entity);
+    ProfessionalDetailsRequestDto toProfessionalDto(CandidateProfessionalDetail entity);
 
     // PERSONAL DETAILS - CREATE
     @Mapping(target = "id", ignore = true)

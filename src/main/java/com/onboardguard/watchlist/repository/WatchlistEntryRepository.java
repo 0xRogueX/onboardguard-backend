@@ -15,17 +15,34 @@ import java.util.List;
 @Repository
 public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry , Long> {
 
-    // Validates if entry is active AND today's date falls between effectiveFrom and effectiveTo
     @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
     Page<WatchlistEntry> findAllActiveAndEffective(Pageable pageable);
 
+    @Query(value = "SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
+            "AND (:category IS NULL OR e.category.code = :category) " +
+            "AND (:severity IS NULL OR e.severity = :severity) " +
+            "AND (:query IS NULL OR LOWER(e.primaryName) LIKE :query OR LOWER(e.organizationName) LIKE :query) " +
+            "AND (e.effectiveFrom IS NULL OR e.effectiveFrom <= CURRENT_DATE) " +
+            "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE)",
+            countQuery = "SELECT COUNT(e) FROM WatchlistEntry e WHERE e.isActive = true " +
+                    "AND (:category IS NULL OR e.category.code = :category) " +
+                    "AND (:severity IS NULL OR e.severity = :severity) " +
+                    "AND (:query IS NULL OR LOWER(e.primaryName) LIKE :query OR LOWER(e.organizationName) LIKE :query) " +
+                    "AND (e.effectiveFrom IS NULL OR e.effectiveFrom <= CURRENT_DATE) " +
+                    "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE)")
+    Page<WatchlistEntry> findWithFilters(
+            @Param("query") String query,
+            @Param("category") CategoryCode category,
+            @Param("severity") com.onboardguard.shared.common.enums.SeverityLevel severity,
+            Pageable pageable);
+
     @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
             "AND e.category.code = :categoryCode " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
-    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") CategoryCode categoryCode, Pageable pageable);
+    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") com.onboardguard.shared.common.enums.CategoryCode categoryCode, Pageable pageable);
 
     Page<WatchlistEntry> findByIsActiveTrue(Pageable pageable);
 

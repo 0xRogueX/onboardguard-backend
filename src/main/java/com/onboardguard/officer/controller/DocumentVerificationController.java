@@ -115,8 +115,8 @@ public class DocumentVerificationController {
      */
     @GetMapping("/candidates/pending")
     public ResponseEntity<ApiResponse<List<CandidateQueueItemDto>>> getPendingCandidatesQueue() {
-
-        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue();
+        Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
+        List<CandidateQueueItemDto> queue = documentVerificationService.getPendingCandidatesQueue(currentOfficerId);
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Pending candidate queue retrieved successfully.",

@@ -1,6 +1,7 @@
 package com.onboardguard.watchlist.service.impl;
 
 import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import com.onboardguard.shared.common.enums.FileFormat;
 import com.onboardguard.shared.config.service.SystemConfigService;
 import com.onboardguard.shared.storage.CloudStorageService;
@@ -54,13 +55,12 @@ public class WatchlistServiceImpl implements WatchlistService {
      * Gets a paginated list of all active entries for the Admin Data Grid.
      */
     @Override
-    public Page<WatchlistEntryResponseDto> getAllActiveEntries(CategoryCode categoryCode, Pageable pageable) {
-        log.debug("Fetching paginated watchlist entries");
-        if (categoryCode == null) {
-            return entryRepository.findAllActiveAndEffective(pageable)
-                    .map(watchlistMapper::toResponseDto);
-        }
-        return entryRepository.findAllActiveAndEffectiveByCategory(categoryCode, pageable)
+    public Page<WatchlistEntryResponseDto> getAllActiveEntries(String query, CategoryCode categoryCode, SeverityLevel severity, Pageable pageable) {
+        log.debug("Fetching paginated watchlist entries with filters: query={}, category={}, severity={}", query, categoryCode, severity);
+
+        String search = (query != null && !query.trim().isEmpty()) ? "%" + query.trim().toLowerCase() + "%" : null;
+
+        return entryRepository.findWithFilters(search, categoryCode, severity, pageable)
                 .map(watchlistMapper::toResponseDto);
     }
 
@@ -142,7 +142,7 @@ public class WatchlistServiceImpl implements WatchlistService {
     @Override
     public List<WatchlistCategoryDto> getActiveCategories() {
         return categoryRepository.findAll().stream()
-                .filter(WatchlistCategory::getIsActive)
+                .filter(c -> c.getIsActive() == null || c.getIsActive())
                 .map(watchlistMapper::toCategoryDto)
                 .collect(Collectors.toList());
     }

@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface DocumentVerificationService {
 
-    List<CandidateQueueItemDto> getPendingCandidatesQueue();
-
     List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId);
+
+    List<CandidateQueueItemDto> getPendingCandidatesQueue(Long officerId);
 
     void claimCandidateForVerification(Long candidateId, Long officerId);
 

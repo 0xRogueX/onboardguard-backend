@@ -73,9 +73,9 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
-    public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
+    public List<CandidateQueueItemDto> getPendingCandidatesQueue(Long officerId) {
         List<Candidate> pendingCandidates = candidateRepository
-                .findAvailableCandidatesForVerification(QUEUE_STATUSES);
+                .findAvailableOrClaimedByMe(QUEUE_STATUSES, officerId);
 
         log.info("Officer queue loaded: {} candidates waiting", pendingCandidates.size());
 
@@ -191,10 +191,10 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
         Candidate candidate = document.getCandidate();
 
-        // Mark as rejected and release lock so officer is freed up
+        // Mark as rejected but DO NOT release lock yet so officer can finish reviewing other docs
         candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_REJECTED);
-        candidate.setVerificationLockedBy(null);
-        candidate.setVerificationLockedAt(null);
+        // candidate.setVerificationLockedBy(null);
+        // candidate.setVerificationLockedAt(null);
         candidateRepository.save(candidate);
 
         log.info("Document ID {} REJECTED by Officer ID {}. Reason: {}", documentId, officerId, reason);
@@ -255,7 +255,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         if (allVerified) {
             Candidate candidate = candidateRepository.findById(candidateId).orElseThrow();
 
-            // ✅ NEW STATUS: DOCUMENTS_VERIFIED — candidate portal will show this
+            // NEW STATUS: DOCUMENTS_VERIFIED — candidate portal will show this
             candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_VERIFIED);
 
             // Release the lock — officer has finished their job
@@ -263,7 +263,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
             candidate.setVerificationLockedAt(null);
             candidateRepository.save(candidate);
 
-            log.info("✅ All documents for Candidate ID {} VERIFIED by Officer ID {}. Triggering screening engine.", candidateId, officerId);
+            log.info("All documents for Candidate ID {} VERIFIED by Officer ID {}. Triggering screening engine.", candidateId, officerId);
 
             eventPublisher.publishEvent(new DocumentVerificationCompletedEvent(candidateId));
 

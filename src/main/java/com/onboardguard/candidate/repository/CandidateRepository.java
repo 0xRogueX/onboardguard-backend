@@ -39,4 +39,12 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
      */
     @Query("SELECT c FROM Candidate c WHERE c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL ORDER BY c.formSubmittedAt ASC")
     List<Candidate> findAvailableCandidatesForVerification(@Param("statuses") List<OnboardingStatus> statuses);
+
+    /**
+     * GET QUEUE VIEW (Grid):
+     * Fetches all candidates who have submitted their form and are NOT currently locked by any officer,
+     * OR are locked by the current officer.
+     */
+    @Query("SELECT c FROM Candidate c WHERE (c.onboardingStatus IN :statuses AND c.verificationLockedBy IS NULL) OR (c.verificationLockedBy = :officerId) ORDER BY c.formSubmittedAt ASC")
+    List<Candidate> findAvailableOrClaimedByMe(@Param("statuses") List<OnboardingStatus> statuses, @Param("officerId") Long officerId);
 }
