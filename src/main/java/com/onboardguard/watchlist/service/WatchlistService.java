@@ -1,6 +1,7 @@
 package com.onboardguard.watchlist.service;
 
 import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
 import org.springframework.data.domain.Page;
@@ -9,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface WatchlistService {
-    Page<WatchlistEntryResponseDto> getAllActiveEntries(CategoryCode categoryCode, Pageable pageable);
+    Page<WatchlistEntryResponseDto> getAllActiveEntries(String query, CategoryCode categoryCode, SeverityLevel severity, Pageable pageable);
 
     WatchlistEntryResponseDto getEntryDetails(Long entryId);
 

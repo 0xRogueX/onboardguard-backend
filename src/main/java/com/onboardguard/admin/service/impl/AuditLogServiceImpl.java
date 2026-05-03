@@ -7,10 +7,11 @@ import com.onboardguard.admin.repository.AuditLogRepository;
 import com.onboardguard.admin.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -27,7 +28,6 @@ public class AuditLogServiceImpl implements AuditLogService {
     /**
      * 1. THE LISTENER: Asynchronously catches events fired from Watchlist, Candidate, or Officer modules.
      */
-    @Async
     @EventListener
     @Transactional
     @Override
@@ -60,5 +60,15 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .stream()
                 .map(auditLogMapper::toDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AuditLogDto> getAllAuditLogs(String entityType, String action, Long performedBy, Pageable pageable) {
+        String type = (entityType != null && !entityType.trim().isEmpty()) ? entityType : null;
+        String act = (action != null && !action.trim().isEmpty()) ? action : null;
+        
+        return auditLogRepository.findWithFilters(type, act, performedBy, pageable)
+                .map(auditLogMapper::toDto);
     }
 }

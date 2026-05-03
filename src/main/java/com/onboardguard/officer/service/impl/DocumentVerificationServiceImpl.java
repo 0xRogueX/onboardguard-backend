@@ -73,9 +73,9 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
-    public List<CandidateQueueItemDto> getPendingCandidatesQueue() {
+    public List<CandidateQueueItemDto> getPendingCandidatesQueue(Long officerId) {
         List<Candidate> pendingCandidates = candidateRepository
-                .findAvailableCandidatesForVerification(QUEUE_STATUSES);
+                .findAvailableOrClaimedByMe(QUEUE_STATUSES, officerId);
 
         log.info("Officer queue loaded: {} candidates waiting", pendingCandidates.size());
 
@@ -191,10 +191,10 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
         Candidate candidate = document.getCandidate();
 
-        // Mark as rejected and release lock so officer is freed up
+        // Mark as rejected but DO NOT release lock yet so officer can finish reviewing other docs
         candidate.setOnboardingStatus(OnboardingStatus.DOCUMENTS_REJECTED);
-        candidate.setVerificationLockedBy(null);
-        candidate.setVerificationLockedAt(null);
+        // candidate.setVerificationLockedBy(null);
+        // candidate.setVerificationLockedAt(null);
         candidateRepository.save(candidate);
 
         log.info("Document ID {} REJECTED by Officer ID {}. Reason: {}", documentId, officerId, reason);

@@ -10,7 +10,7 @@ public interface DocumentVerificationService {
 
     List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId);
 
-    List<CandidateQueueItemDto> getPendingCandidatesQueue();
+    List<CandidateQueueItemDto> getPendingCandidatesQueue(Long officerId);
 
     void claimCandidateForVerification(Long candidateId, Long officerId);
 

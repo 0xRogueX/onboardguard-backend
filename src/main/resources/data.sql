@@ -1,6 +1,7 @@
--- Description: Seeds the initial system administrators
+-- ==============================================================================
+-- 1. SEED SYSTEM ADMINISTRATORS
+-- ==============================================================================
 -- Default Login Password for both accounts is: password123
--- BCrypt Hash used: $2a$10$wT5H5dK6X.t/b.4fL7hQv.uM.X6w9.e/B7/8iR.N9.B/3m.A1.M2.
 
 INSERT INTO users (
     email,
@@ -40,7 +41,9 @@ INSERT INTO users (
     ON CONFLICT (email) DO NOTHING;
 
 
--- 1. Seed Sources
+-- ==============================================================================
+-- 2. SEED WATCHLIST SOURCES
+-- ==============================================================================
 INSERT INTO watchlist_sources (id, code, name, type, credibility_weight, active, created_at, updated_at, version)
 VALUES
     (1, 'UN_SC', 'UN Security Council', 'OFFICIAL', 1.0, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
@@ -51,7 +54,10 @@ VALUES
     (6, 'NEWS_MEDIA', 'Global News Media', 'UNVERIFIED', 0.4, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
     (7, 'INTERNAL_HR', 'Internal HR Blacklist', 'INTERNAL', 0.8, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
--- 2. Seed Categories (Updated to match CategoryCode enum and WatchlistCategory entity)
+
+-- ==============================================================================
+-- 3. SEED WATCHLIST CATEGORIES
+-- ==============================================================================
 INSERT INTO watchlist_categories (id, code, name, description, base_risk_score, is_active, created_at, updated_at, version)
 VALUES
     (1, 'CRIMINAL', 'Criminal Records', 'Individuals with criminal background or global sanctions', 100, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
@@ -61,7 +67,10 @@ VALUES
     (5, 'PROFESSIONAL_MISCONDUCT', 'Debarred Professionals', 'Banned professionals with revoked licenses', 85, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
     (6, 'EMPLOYMENT_ISSUE', 'Employment Fraud', 'Fake employment or HR scams', 75, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
--- 3. Seed Watchlist Entries (Added aadhaar_number and source_id mapping)
+
+-- ==============================================================================
+-- 4. SEED WATCHLIST ENTRIES
+-- ==============================================================================
 INSERT INTO watchlist_entries
 (id, category_id, source_id, primary_name, primary_name_normalized, severity, pan_number, aadhaar_number, nationality, category_specific_data, is_active, created_at, updated_at, version)
 VALUES
@@ -110,64 +119,33 @@ VALUES
 (1027, 5, 4, 'Suresh Accountant', 'SURESHACCOUNTANT', 'MEDIUM', NULL, '888800001027', 'Indian', '{"status":"License Revoked"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 (1028, 3, 7, 'Global Infra Vendor', 'GLOBALINFRAVENDOR', 'LOW', NULL, '888800001028', 'Indian', '{"issue":"Contract Violation"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 (1029, 6, 7, 'JobFast India', 'JOBFASTINDIA', 'MEDIUM', NULL, '888800001029', 'Indian', '{"issue":"Recruitment Scam"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
-(1030, 1, 3, 'Deepak Boxer', 'DEEPAKBOXER', 'HIGH', NULL, '888800001030', 'Indian', '{"crime":"Organized Crime"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+(1030, 1, 3, 'Deepak Boxer', 'DEEPAKBOXER', 'HIGH', NULL, '888800001030', 'Indian', '{"crime":"Organized Crime"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 
--- 4. Seed Aliases (Added source_id)
+-- Vivek Dadhaniya (Additional Record 2): Criminal via CBI India
+(1031, 1, 3, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'HIGH', 'ABCDV1234E', '888800001009', 'Indian', '{"crime":"Money Laundering", "status":"Wanted"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+
+-- Vivek Dadhaniya (Additional Record 3): Fraud via SEBI Debarred Entities
+(1032, 2, 4, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'HIGH', 'ABCDV1234E', '888800001009', 'Indian', '{"case":"Insider Trading", "penalty":"Debarred for 5 years"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+
+-- Vivek Dadhaniya (Additional Record 4): Employment Issue via Internal HR
+(1033, 6, 7, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'MEDIUM', NULL, '888800001009', 'Indian', '{"issue":"Falsified Corporate Records"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+
+-- ==============================================================================
+-- 5. SEED ALIASES
+-- ==============================================================================
 INSERT INTO watchlist_aliases (id, entry_id, source_id, alias_name, alias_name_normalized, alias_type, created_at, updated_at, version)
 VALUES
     (1, 1002, 6, 'The Wolf of Wall Street', 'THEWOLFOFWALLSTREET', 'AKA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
     (2, 1018, 2, 'Abu S', 'ABUS', 'SHORT_NAME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
-    (3, 1019, 2, 'Rajan N', 'RAJANN', 'SHORT_NAME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+    (3, 1019, 2, 'Rajan N', 'RAJANN', 'SHORT_NAME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+    (4, 1031, 3, 'Vicky Bhai', 'VIVEKBHAI', 'AKA', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+    (5, 1032, 4, 'V. Dadhaniya', 'VDADHANIYA', 'SHORT_NAME', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
--- 5. Seed Watchlist Evidence Documents (New Entity)
--- INSERT INTO watchlist_evidence_documents (id, entry_id, source_id, cloud_storage_key, file_name, file_format, evidence_type, created_at, updated_at, version)
--- VALUES
---     -- Global / Known
---     (1, 1001, 1, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'un_resolution.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (2, 1002, 6, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'wsj_article.jpg', 'JPG', 'NEWS_ARTICLE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- Indian High Profile
---     (3, 1003, 5, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'rbi_wilful_defaulter_notice.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (4, 1004, 5, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'pnb_scam_fir.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (5, 1005, 5, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'choksi_ed_attachment.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- USER PROVIDED NAMES
---     (6, 1006, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'hr_internal_memo_smit.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (7, 1007, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'cyber_fraud_internal_report.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (8, 1008, 4, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'sebi_debarment_order.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (9, 1009, 6, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'pep_news_article.jpg', 'JPG', 'NEWS_ARTICLE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (10, 1010, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'cbi_chargesheet.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (11, 1011, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'vendor_blacklisting_memo.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (12, 1012, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'employment_fraud_investigation.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (13, 1013, 6, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'local_pep_coverage.jpg', 'JPG', 'NEWS_ARTICLE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (14, 1014, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'suspicious_activity_log.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- Additional Indian Data
---     (15, 1015, 4, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'sebi_fraud_reference.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (16, 1016, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'cbi_kidney_racket_fir.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (17, 1017, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'extortion_case_details.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (18, 1018, 2, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'interpol_red_notice.jpg', 'JPG', 'OTHER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (19, 1019, 2, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'interpol_red_notice_rajan.jpg', 'JPG', 'OTHER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- Vendors / Fraud / Risk
---     (20, 1020, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'fake_billing_invoice.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (21, 1021, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'job_scam_complaint.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- PEP
---     (22, 1022, 6, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'political_scandal_news.jpg', 'JPG', 'NEWS_ARTICLE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (23, 1023, 6, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'pep_declaration_form.jpg', 'JPG', 'NEWS_ARTICLE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- Cyber / Fraud
---     (24, 1024, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'financial_fraud_cbi_docket.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (25, 1025, 4, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'stock_market_scam_sebi.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---
---     -- Misc Additional
---     (26, 1026, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'extortion_fir.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (27, 1027, 4, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'license_revocation_notice.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (28, 1028, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'contract_violation_memo.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (29, 1029, 7, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'recruitment_scam_report.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
---     (30, 1030, 3, 'https://res.cloudinary.com/dr2dzhwqx/image/authenticated/s--28dDruHv--/v1777666054/candidates/1/AADHAAR_CARD/f660b1c5-d9cd-4a34-8f52-f0733c82a99f.jpg', 'organized_crime_chargesheet.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
+-- ==============================================================================
+-- 6. SEED EVIDENCE DOCUMENTS
+-- ==============================================================================
 INSERT INTO watchlist_evidence_documents (id, entry_id, source_id, cloud_storage_key, file_name, file_format, evidence_type, created_at, updated_at, version)
 VALUES
     -- Global / Known
@@ -214,14 +192,18 @@ VALUES
     (27, 1027, 4, 'watchlist/evidence/1027/REGULATORY_ORDER/license_revocation_notice', 'license_revocation_notice.jpg', 'JPG', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
     (28, 1028, 7, 'watchlist/evidence/1028/INTERNAL_REPORT/contract_violation_memo', 'contract_violation_memo.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
     (29, 1029, 7, 'watchlist/evidence/1029/INTERNAL_REPORT/recruitment_scam_report', 'recruitment_scam_report.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
-    (30, 1030, 3, 'watchlist/evidence/1030/COURT_ORDER/organized_crime_chargesheet', 'organized_crime_chargesheet.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+    (30, 1030, 3, 'watchlist/evidence/1030/COURT_ORDER/organized_crime_chargesheet', 'organized_crime_chargesheet.jpg', 'JPG', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 
--- Make sure to advance the sequence tracker so you don't run into ID conflicts on the next insert
-SELECT setval(pg_get_serial_sequence('watchlist_evidence_documents', 'id'), coalesce(max(id), 1)) FROM watchlist_evidence_documents;
+    -- Vivek Dadhaniya Evidence
+    (31, 1031, 3, 'watchlist/evidence/1031/COURT_ORDER/cbi_money_laundering_warrant', 'cbi_money_laundering_warrant.pdf', 'PDF', 'COURT_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+    (32, 1032, 4, 'watchlist/evidence/1032/REGULATORY_ORDER/sebi_insider_trading_ban', 'sebi_insider_trading_ban.pdf', 'PDF', 'REGULATORY_ORDER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+    (33, 1033, 7, 'watchlist/evidence/1033/INTERNAL_REPORT/hr_falsification_memo', 'hr_falsification_memo.jpg', 'JPG', 'INTERNAL_REPORT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
 
 
-
--- 6. Advance sequences so manual IDs don't clash with future auto-inserts
+-- ==============================================================================
+-- 7. ADVANCE SEQUENCES
+-- ==============================================================================
+-- Advance sequences so manual IDs don't clash with future auto-inserts
 SELECT setval(pg_get_serial_sequence('watchlist_entries', 'id'), coalesce(max(id), 1)) FROM watchlist_entries;
 SELECT setval(pg_get_serial_sequence('watchlist_sources', 'id'), coalesce(max(id), 1)) FROM watchlist_sources;
 SELECT setval(pg_get_serial_sequence('watchlist_categories', 'id'), coalesce(max(id), 1)) FROM watchlist_categories;
@@ -230,10 +212,8 @@ SELECT setval(pg_get_serial_sequence('watchlist_evidence_documents', 'id'), coal
 
 
 -- ==============================================================================
--- SYSTEM CONFIGURATION INITIAL DATA
+-- 8. SYSTEM CONFIGURATION INITIAL DATA
 -- ==============================================================================
-
--- Delete existing to ensure a clean start for the new schema
 DELETE FROM system_config;
 
 -- SCREENING THRESHOLDS

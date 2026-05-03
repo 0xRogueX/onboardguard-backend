@@ -1,6 +1,8 @@
 package com.onboardguard.watchlist.controller;
 
 import com.onboardguard.shared.common.dto.ApiResponse;
+import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import com.onboardguard.watchlist.dto.WatchlistCategoryDto;
 import com.onboardguard.watchlist.dto.WatchlistEntryResponseDto;
 import com.onboardguard.watchlist.service.WatchlistService;
@@ -29,9 +31,11 @@ public class WatchlistController {
     // @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN'
     // , 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<WatchlistEntryResponseDto>>> getAllActiveEntries(
-            @RequestParam(required = false) com.onboardguard.shared.common.enums.CategoryCode category,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) CategoryCode category,
+            @RequestParam(required = false) SeverityLevel severity,
             Pageable pageable) {
-        Page<WatchlistEntryResponseDto> pageData = watchlistService.getAllActiveEntries(category, pageable);
+        Page<WatchlistEntryResponseDto> pageData = watchlistService.getAllActiveEntries(search, category, severity, pageable);
         return ResponseEntity.ok(ApiResponse.success("Fetched watchlist entries", pageData));
     }
 

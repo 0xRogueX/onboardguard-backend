@@ -69,7 +69,7 @@ public class CandidateDocumentServiceImpl implements CandidateDocumentService {
         if (existingDocOpt.isPresent()) {
             document = existingDocOpt.get();
 
-            if (document.getStatus() != DocumentStatus.REJECTED) {
+            if (document.getStatus() != DocumentStatus.REJECTED && document.getStatus() != DocumentStatus.PENDING) {
                 throw new BadRequestException(
                         "Document of type " + candidateDocumentType + " already exists and is currently " + document.getStatus()
                 );
@@ -128,6 +128,8 @@ public class CandidateDocumentServiceImpl implements CandidateDocumentService {
         } else if (currentStatus == OnboardingStatus.DOCUMENTS_REJECTED) {
             candidate.setOnboardingStatus(OnboardingStatus.FORM_SUBMITTED);
             candidate.setFormSubmittedAt(Instant.now());
+            candidate.setVerificationLockedBy(null);
+            candidate.setVerificationLockedAt(null);
             candidateRepository.save(candidate);
         }
 

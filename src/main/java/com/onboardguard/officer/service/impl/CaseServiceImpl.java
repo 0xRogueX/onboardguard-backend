@@ -10,6 +10,7 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.security.SecurityUtils;
@@ -88,10 +89,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.OPEN) {
-            throw new IllegalStateException("Only OPEN cases can be claimed.");
+            throw new BadRequestException("Only OPEN cases can be claimed.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("Case already claimed by another officer.");
         }
 
         // State Transition
@@ -130,7 +131,7 @@ public class CaseServiceImpl implements CaseService {
                 investigationCase.getId(), investigationCase.getStatus(), investigationCase.getAssignedOfficerId());
 
         if (investigationCase.getStatus() != CaseStatus.IN_REVIEW) {
-            throw new IllegalStateException("Only IN_REVIEW cases can be escalated.");
+            throw new BadRequestException("Only IN_REVIEW cases can be escalated.");
         }
 
         validateCaseOwnership(investigationCase, l1OfficerId);
@@ -168,10 +169,10 @@ public class CaseServiceImpl implements CaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Case not found"));
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Only ESCALATED cases can be claimed by an L2 Checker.");
+            throw new BadRequestException("Only ESCALATED cases can be claimed by an L2 Checker.");
         }
         if (investigationCase.getAssignedOfficerId() != null) {
-            throw new IllegalStateException("Case already claimed by another officer.");
+            throw new BadRequestException("Case already claimed by another officer.");
         }
 
         // Lock to L2 Officer (stays ESCALATED, but drops off dashboard due to ID assignment)
@@ -202,7 +203,7 @@ public class CaseServiceImpl implements CaseService {
         Case investigationCase = getCaseById(caseId);
 
         if (investigationCase.getStatus() != CaseStatus.ESCALATED) {
-            throw new IllegalStateException("Case must be in ESCALATED state to be resolved.");
+            throw new BadRequestException("Case must be in ESCALATED state to be resolved.");
         }
         validateCaseOwnership(investigationCase, l2OfficerId);
 

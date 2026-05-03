@@ -17,5 +17,5 @@ public class CloudStorageException extends ApplicationException {
     public CloudStorageException(String message, String storageKey) {
         super(message, "CLOUD_STORAGE_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
         this.storageKey = storageKey;
-    }
+    } 
 }
