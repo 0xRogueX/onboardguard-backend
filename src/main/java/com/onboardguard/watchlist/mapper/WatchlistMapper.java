@@ -41,6 +41,7 @@ public interface WatchlistMapper {
     /**
      * Maps the Category entity to the CategoryDto
      */
-    @Mapping(target = "categoryCode", expression = "java(com.onboardguard.shared.common.enums.CategoryCode.valueOf(category.getCode().name()))")
+    @Mapping(source = "code", target = "categoryCode")
+    @Mapping(source = "name", target = "categoryName")
     WatchlistCategoryDto toCategoryDto(WatchlistCategory category);
 }
