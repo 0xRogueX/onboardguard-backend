@@ -10,6 +10,7 @@ import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.officer.service.CaseService;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
+import com.onboardguard.shared.common.events.BusinessLogEvent;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
@@ -102,6 +103,9 @@ public class CaseServiceImpl implements CaseService {
 
         caseRepository.save(investigationCase);
         log.info("Case ID {} MANUALLY claimed by L1 Officer {}. Status -> IN_REVIEW.", caseId, l1OfficerId);
+
+        // Fire Audit Log
+        publishCaseAudit(caseId, "CASE_CLAIMED", "OPEN", "IN_REVIEW", l1OfficerId, "OFFICER", "Officer manually claimed case");
     }
 
     @Override
@@ -157,6 +161,9 @@ public class CaseServiceImpl implements CaseService {
         investigationCase.getNotes().add(escalationNote);
         caseRepository.save(investigationCase);
         log.info("Case ID {} ESCALATED by L1 Officer {}", caseId, l1OfficerId);
+
+        // Fire Audit Log
+        publishCaseAudit(caseId, "CASE_ESCALATED", "IN_REVIEW", "ESCALATED", l1OfficerId, "OFFICER", "Case escalated for L2 review: " + dto.escalationReason());
     }
 
 
@@ -225,6 +232,9 @@ public class CaseServiceImpl implements CaseService {
         caseRepository.save(investigationCase);
         log.info("Case ID {} RESOLVED with outcome {} by L2 Officer {}", caseId, dto.outcome(), l2OfficerId);
 
+        // Fire Audit Log
+        publishCaseAudit(caseId, "CASE_RESOLVED", "ESCALATED", "RESOLVED", l2OfficerId, "OFFICER", "Final resolution: " + dto.outcome() + " - " + dto.outcomeReason());
+
         // Reflect status on Candidate Dashboard/Tracking
         updateCandidateOnboardingStatus(investigationCase.getCandidateId(), dto.outcome());
 
@@ -274,5 +284,19 @@ public class CaseServiceImpl implements CaseService {
         if (!officerId.equals(investigationCase.getAssignedOfficerId())) {
             throw new UnauthorizedAccessException("You cannot perform this action because the case is locked by another officer.");
         }
+    }
+
+    private void publishCaseAudit(Long caseId, String action, String oldStatus, String newStatus,
+                                   Long performedBy, String actorRole, String remarks) {
+        eventPublisher.publishEvent(BusinessLogEvent.builder()
+                .entityType("CASE")
+                .entityId(caseId)
+                .action(action)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .performedBy(performedBy)
+                .actorRole(actorRole)
+                .remarks(remarks)
+                .build());
     }
 }

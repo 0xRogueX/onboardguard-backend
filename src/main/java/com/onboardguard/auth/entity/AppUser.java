@@ -7,8 +7,10 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "users")
 @Getter
 @Setter

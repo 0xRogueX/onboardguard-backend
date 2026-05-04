@@ -18,4 +18,7 @@ public class CustomRevisionEntity extends DefaultRevisionEntity {
     // Captures EXACTLY who made the change at the database level
     @Column(name = "modified_by", length = 100)
     private String modifiedBy;
+
+    @Column(name = "action_type", length = 100)
+    private String actionType;
 }

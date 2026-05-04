@@ -7,8 +7,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import java.time.Instant;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "candidate_documents")
 @Getter
 @Setter

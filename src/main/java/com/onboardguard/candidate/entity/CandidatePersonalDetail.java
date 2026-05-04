@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import java.time.LocalDate;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "candidate_personal_details")
 @Getter
 @Setter

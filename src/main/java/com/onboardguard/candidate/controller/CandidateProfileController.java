@@ -2,6 +2,7 @@ package com.onboardguard.candidate.controller;
 
 import com.onboardguard.candidate.dto.request.PersonalDetailsRequestDto;
 import com.onboardguard.candidate.dto.request.ProfessionalDetailsRequestDto;
+import com.onboardguard.candidate.dto.response.CandidateProfileResponseDto;
 import com.onboardguard.candidate.dto.response.CandidateStatusResponseDto;
 import com.onboardguard.candidate.service.impl.CandidateServiceImpl;
 import com.onboardguard.shared.common.dto.ApiResponse;
@@ -26,8 +27,8 @@ public class CandidateProfileController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<com.onboardguard.candidate.dto.response.CandidateProfileResponseDto>> getProfileDetails() {
-        com.onboardguard.candidate.dto.response.CandidateProfileResponseDto details = candidateService.getProfileDetails();
+    public ResponseEntity<ApiResponse<CandidateProfileResponseDto>> getProfileDetails() {
+        CandidateProfileResponseDto details = candidateService.getProfileDetails();
         return ResponseEntity.ok(ApiResponse.success("Profile details fetched successfully", details));
     }
 

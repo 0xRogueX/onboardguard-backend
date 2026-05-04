@@ -58,4 +58,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findByIsSlaBreachedTrueAndStatusNot(AlertStatus status);
 
     Page<Alert> findByStatusOrderBySlaDeadlineAsc(AlertStatus status, Pageable pageable);
+
+    long countByStatus(AlertStatus status);
 }

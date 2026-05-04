@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import java.math.BigDecimal;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "candidate_professional_details")
 @Getter
 @Setter

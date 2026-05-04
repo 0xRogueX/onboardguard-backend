@@ -5,10 +5,7 @@ import com.onboardguard.screening.enums.MatchType;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * Represents one individual match found during screening.
- * Collected by strategies and returned inside ScreeningResultDto.
- */
+
 @Getter
 @Builder
 public class MatchDetailDto {
@@ -38,4 +35,6 @@ public class MatchDetailDto {
     private Double scoreContribution;
 
     private CorroborationLevel corroborationLevel;
+
+    private Boolean suppressed; // true = stored for audit, not added to score
 }

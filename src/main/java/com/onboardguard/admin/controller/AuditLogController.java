@@ -4,6 +4,7 @@ import com.onboardguard.admin.dto.AuditLogDto;
 import com.onboardguard.admin.service.AuditLogService;
 import com.onboardguard.shared.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/audit-logs")
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class AuditLogController {
      * Example Call: GET /api/v1/admin/audit-logs/timeline?entityType=CANDIDATE&entityId=105
      */
     @GetMapping("/timeline")
-//    @PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_OFFICER_L2', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+//    @PreAuthorize("hasAnyRole('L1_OFFICER', 'L2_OFFICER', 'ADMIN', 'SUPER_ADMIN', 'ROLE_L1_OFFICER', 'ROLE_L2_OFFICER', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<AuditLogDto>>> getTimeline(
             @RequestParam String entityType,
             @RequestParam Long entityId) {
@@ -34,13 +36,14 @@ public class AuditLogController {
     }
 
     @GetMapping
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<AuditLogDto>>> getLogs(
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) Long performedBy,
             Pageable pageable) {
 
+        log.info("Fetching Audit Logs with filters - EntityType: {}, Action: {}, PerformedBy: {}", entityType, action, performedBy);
         Page<AuditLogDto> logs = auditLogService.getAllAuditLogs(entityType, action, performedBy, pageable);
         return ResponseEntity.ok(ApiResponse.success("Audit logs fetched successfully", logs));
     }

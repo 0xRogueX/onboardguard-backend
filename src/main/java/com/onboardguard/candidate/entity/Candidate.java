@@ -13,8 +13,10 @@ import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "candidates")
 @Getter
 @Setter

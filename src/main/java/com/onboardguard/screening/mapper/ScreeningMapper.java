@@ -132,6 +132,7 @@ public interface ScreeningMapper {
     @Mapping(target = "watchlistCategorySnapshot",         source = "watchlistCategory")
     @Mapping(target = "watchlistSeveritySnapshot",         source = "watchlistSeverity")
     @Mapping(target = "watchlistSourceNameSnapshot",       source = "watchlistSourceName")
+    @Mapping(target = "suppressed",                        source = "suppressed")
     ScreeningMatch toScreeningMatchEntity(MatchDetailDto dto);
 
     /** Bulk variant — used when persisting all matches from a single result. */
@@ -208,6 +209,7 @@ public interface ScreeningMapper {
     @Mapping(target = "categoryBonus",              source = "categoryBonus")
     @Mapping(target = "scoreContribution",          source = "scoreContribution")
     @Mapping(target = "corroborationLevel",         source = "corroborationLevel")
+    @Mapping(target = "suppressed",                 source = "suppressed")
     MatchDetailDto toMatchDetailDto(ScreeningMatch entity);
 
     /** Bulk — used in the match-detail endpoint (officer case detail view). */
@@ -257,7 +259,7 @@ public interface ScreeningMapper {
     default ScreeningStatus riskLevelToStatus(RiskLevel level) {
         if (level == null) return ScreeningStatus.PENDING;
         if (level == RiskLevel.LOW) return ScreeningStatus.CLEAR;
-        if (level == RiskLevel.MEDIUM) return ScreeningStatus.REVIEW_NEEDED;
+        if (level == RiskLevel.MEDIUM) return ScreeningStatus.FLAGGED;
         return ScreeningStatus.FLAGGED;
     }
 

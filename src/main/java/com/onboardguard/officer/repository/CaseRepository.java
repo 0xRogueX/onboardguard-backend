@@ -77,4 +77,8 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
         ORDER BY c.escalatedAt ASC
     """)
     Optional<Case> findFirstNextEscalatedCaseForUpdate(@Param("status") CaseStatus status);
+
+    long countByStatus(CaseStatus status);
+
+    long countByIsSlaBreachedTrue();
 }

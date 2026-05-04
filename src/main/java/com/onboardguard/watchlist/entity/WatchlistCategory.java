@@ -5,8 +5,10 @@ import com.onboardguard.shared.common.enums.CategoryCode;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "watchlist_categories")
 @Getter
 @Setter

@@ -15,5 +15,12 @@ public class CustomRevisionListener implements RevisionListener {
         } else {
             customRevEntity.setModifiedBy("SYSTEM");
         }
+
+        String action = com.onboardguard.shared.common.context.RevisionContext.getCurrentAction();
+        if (action != null) {
+            customRevEntity.setActionType(action);
+        } else {
+            customRevEntity.setActionType("SYSTEM_UPDATE");
+        }
     }
 }

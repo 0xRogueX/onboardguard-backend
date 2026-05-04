@@ -17,6 +17,7 @@ import com.onboardguard.shared.common.enums.AlertStatus;
 import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.NoteType;
 import com.onboardguard.shared.common.enums.SeverityLevel;
+import com.onboardguard.shared.common.events.BusinessLogEvent;
 import com.onboardguard.shared.common.events.CaseResolvedEvent;
 import com.onboardguard.shared.common.exception.BadRequestException;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
@@ -96,7 +97,8 @@ public class AlertServiceImpl implements AlertService {
         oldestOpenAlert.setAcknowledgedBy(officerId);
         oldestOpenAlert.setAcknowledgedAt(Instant.now());
 
-        log.info("L1 Officer ID {} used 'Get Next' and was assigned Alert ID {}", officerId, oldestOpenAlert.getId());
+        // Fire Audit Log
+        publishAlertAudit(oldestOpenAlert.getId(), "ALERT_CLAIMED", "OPEN", "IN_REVIEW", officerId, "OFFICER", "Officer claimed alert via Get Next");
 
         // 3. Save and return the mapped DTO to the frontend
         return alertMapper.toDto(alertRepository.save(oldestOpenAlert));
@@ -108,7 +110,12 @@ public class AlertServiceImpl implements AlertService {
     public void dismissAlert(Long alertId, Long officerId, String reason) {
         Alert alert = getAlertById(alertId);
 
-        validateAlertOwnership(alert, officerId);
+        if (alert.getStatus() == AlertStatus.OPEN) {
+            alert.setAcknowledgedBy(officerId);
+            alert.setAcknowledgedAt(Instant.now());
+        } else {
+            validateAlertOwnership(alert, officerId);
+        }
 
         alert.setStatus(AlertStatus.CLOSED);
         alertRepository.save(alert);
@@ -129,6 +136,9 @@ public class AlertServiceImpl implements AlertService {
                 true, // cleared
                 "Compliance screening cleared. Congratulations! You are now authorized to onboard."
         ));
+
+        // Fire Audit Log
+        publishAlertAudit(alertId, "ALERT_DISMISSED", "IN_REVIEW", "CLOSED", officerId, "OFFICER", "Officer dismissed alert: " + reason);
     }
 
     @Override
@@ -172,6 +182,9 @@ public class AlertServiceImpl implements AlertService {
 
         Case savedCase = caseRepository.save(investigationCase);
         log.info("Alert ID {} converted to Case ID {} by L1 Officer ID {}", alertId, savedCase.getId(), officerId);
+
+        // Fire Audit Log
+        publishAlertAudit(alertId, "ALERT_ESCALATED", "IN_REVIEW", "CONVERTED_TO_CASE", officerId, "OFFICER", "Alert converted to Case ID: " + savedCase.getId());
 
         return savedCase.getId();
 
@@ -229,6 +242,9 @@ public class AlertServiceImpl implements AlertService {
 
             log.info("Alert ID {} created for candidateId={} with severity={} and SLA deadline in {} minutes",
                     savedAlert.getId(), candidate.getId(), severity, slaMinutes);
+
+            // 9. Fire Audit Log
+            publishAlertAudit(savedAlert.getId(), "ALERT_GENERATED", "NONE", "OPEN", 0L, "SYSTEM", "Automated alert generation from screening result");
 
         } catch (Exception ex) {
             log.error("Failed to create alert from screening result ID: {}", screeningResult.getId(), ex);
@@ -290,5 +306,19 @@ public class AlertServiceImpl implements AlertService {
                 .stream()
                 .map(alertMapper::toDto)
                 .toList();
+    }
+
+    private void publishAlertAudit(Long alertId, String action, String oldStatus, String newStatus,
+                                   Long performedBy, String actorRole, String remarks) {
+        eventPublisher.publishEvent(BusinessLogEvent.builder()
+                .entityType("ALERT")
+                .entityId(alertId)
+                .action(action)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .performedBy(performedBy)
+                .actorRole(actorRole)
+                .remarks(remarks)
+                .build());
     }
 }

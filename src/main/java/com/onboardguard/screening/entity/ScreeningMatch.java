@@ -7,8 +7,10 @@ import com.onboardguard.watchlist.entity.WatchlistEntry;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "screening_matches",
         indexes = {
                 @Index(name = "idx_sm_result_id", columnList = "screening_result_id"),
@@ -87,15 +89,15 @@ public class ScreeningMatch extends BaseEntity {
     @Column(nullable = false)
     private String watchlistEntryPrimaryNameSnapshot;
 
-    // Snapshot of which category the entry belonged to
     @Column(nullable = false)
     private String watchlistCategorySnapshot;
 
-    // Snapshot of severity at match time
     @Column(nullable = false)
     private String watchlistSeveritySnapshot;
 
-    // Snapshot of source name
     @Column(nullable = false)
     private String watchlistSourceNameSnapshot;
+
+    @Column(nullable = false)
+    private Boolean suppressed = false;
 }

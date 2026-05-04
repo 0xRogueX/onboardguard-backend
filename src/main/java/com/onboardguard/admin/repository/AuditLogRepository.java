@@ -15,15 +15,16 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     // This perfectly supports the UI "History Timeline" view
     List<AuditLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, Long entityId);
 
-    @Query(value = "SELECT a FROM AuditLog a WHERE " +
-            "(:entityType IS NULL OR a.entityType = :entityType) AND " +
-            "(:action IS NULL OR a.action = :action) AND " +
-            "(:performedBy IS NULL OR a.performedBy = :performedBy) " +
-            "ORDER BY a.createdAt DESC",
-            countQuery = "SELECT COUNT(a) FROM AuditLog a WHERE " +
-                    "(:entityType IS NULL OR a.entityType = :entityType) AND " +
-                    "(:action IS NULL OR a.action = :action) AND " +
-                    "(:performedBy IS NULL OR a.performedBy = :performedBy)")
+    @Query(value = "SELECT * FROM business_audit_logs WHERE " +
+            "(:entityType IS NULL OR entity_type = :entityType) AND " +
+            "(:action IS NULL OR action = :action) AND " +
+            "(:performedBy IS NULL OR performed_by = :performedBy) " +
+            "ORDER BY created_at DESC",
+            countQuery = "SELECT COUNT(*) FROM business_audit_logs WHERE " +
+                    "(:entityType IS NULL OR entity_type = :entityType) AND " +
+                    "(:action IS NULL OR action = :action) AND " +
+                    "(:performedBy IS NULL OR performed_by = :performedBy)",
+            nativeQuery = true)
     Page<AuditLog> findWithFilters(
             @Param("entityType") String entityType,
             @Param("action") String action,

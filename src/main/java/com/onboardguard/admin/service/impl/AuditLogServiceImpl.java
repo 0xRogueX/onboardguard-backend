@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
 import org.springframework.context.event.EventListener;
@@ -26,27 +27,32 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final AuditLogMapper auditLogMapper;
 
     /**
-     * 1. THE LISTENER: Asynchronously catches events fired from Watchlist, Candidate, or Officer modules.
+     * 1. THE LISTENER: Synchronously catches events fired from Watchlist, Candidate, or Officer modules.
      */
     @EventListener
     @Transactional
     @Override
     public void handleBusinessLogEvent(BusinessLogEvent event) {
-        log.info("Recording Business Audit Log for {} ID: {}", event.entityType(), event.entityId());
+        log.info(">>>> [AUDIT] Received BusinessLogEvent for {} with action {}", event.entityType(), event.action());
+        
+        try {
+            AuditLog auditLog = AuditLog.builder()
+                    .entityType(event.entityType())
+                    .entityId(event.entityId())
+                    .action(event.action())
+                    .oldStatus(event.oldStatus())
+                    .newStatus(event.newStatus())
+                    .performedBy(event.performedBy())
+                    .actorRole(event.actorRole())
+                    .remarks(event.remarks())
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-        AuditLog auditLog = AuditLog.builder()
-                .entityType(event.entityType())
-                .entityId(event.entityId())
-                .action(event.action())
-                .oldStatus(event.oldStatus())
-                .newStatus(event.newStatus())
-                .performedBy(event.performedBy())
-                .actorRole(event.actorRole())
-                .remarks(event.remarks())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        auditLogRepository.save(auditLog);
+            AuditLog saved = auditLogRepository.save(auditLog);
+            log.info(">>>> [AUDIT] Successfully saved AuditLog ID: {}", saved.getId());
+        } catch (Exception e) {
+            log.error(">>>> [AUDIT] Failed to save audit log: {}", e.getMessage(), e);
+        }
     }
 
     /**
