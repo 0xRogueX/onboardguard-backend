@@ -1,11 +1,11 @@
 # OnboardGuard Backend 🛡️
 
-## 📌 1. Project Overview
+## 1. Project Overview
 OnboardGuard is a comprehensive, enterprise-grade Compliance, Anti-Money Laundering (AML), and Know Your Customer (KYC) Screening Portal. Designed for highly regulated environments, it manages the end-to-end lifecycle of candidate and vendor onboarding.
 
 The system facilitates secure document collection, manual Officer-led verification (Maker/Checker), automated risk scoring against global sanction/watchlist databases, SLA-tracked investigations, and comprehensive business auditing.
 
-## 🏗️ 2. Architecture & Design
+## 2. Architecture & Design
 
 ### High-Level Architecture
 The project follows a **Modular Monolith** architecture built on Domain-Driven Design (DDD) principles.
@@ -16,7 +16,7 @@ The project follows a **Modular Monolith** architecture built on Domain-Driven D
 * **Pessimistic Locking & FIFO Queues**: Uses database-level locks (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) and `SKIP LOCKED` (`jakarta.persistence.lock.timeout = -2`) to prevent concurrent L1/L2 Officers from claiming the same candidate, alert, or case.
 * **Strategy Pattern**: The risk screening engine dynamically switches between `BasicScreeningStrategy` and `AdvancedScreeningStrategy` based on system configurations.
 
-### 🌊 Flow Logic Diagrams
+### Flow Logic Diagrams
 
 #### 1. End-to-End Onboarding & Screening Flow
 ```mermaid
@@ -58,7 +58,7 @@ sequenceDiagram
     DB-->>SuperAdmin: Success (Changes Applied)
 ```
 
-## ⚙️ 3. Tech Stack
+## 3. Tech Stack
 * **Core Framework**: Java 17, Spring Boot 3.5.13
 * **Database**: PostgreSQL (Primary) / H2 (Testing)
 * **Search Engine**: Elasticsearch 8+ (Remote/Cloud Enterprise configured)
@@ -70,7 +70,7 @@ sequenceDiagram
 * **Mailing**: Spring Boot Mail + Thymeleaf HTML Templates
 * **Build Tool**: Maven (`spring-boot-maven-plugin`)
 
-## 📁 4. Project Structure
+## 4. Project Structure
 The codebase is partitioned by bounded contexts:
 
 * **`admin/`**: User provisioning, Audit Log timeline (Business Diary), Maker-Checker approval ledger, and Dashboard statistics aggregation.
@@ -81,7 +81,7 @@ The codebase is partitioned by bounded contexts:
 * **`watchlist/`**: Dictionary definitions, Alias mapping, Evidence storage, and real-time Elasticsearch syncing.
 * **`shared/`**: Global exception handlers, Base Entities, JWT configurations, Redis/Cloudinary adapters, and Application Events.
 
-## 🧠 5. Deep Dive: Risk Screening Logic & Scoring Weights
+## 5. Deep Dive: Risk Screening Logic & Scoring Weights
 
 The `RiskScoringEngine` dynamically loads configurations from Redis/PostgreSQL. It analyzes individual `ScreeningMatch` contributions using the exact formula:
 
@@ -122,11 +122,11 @@ Applied to mitigate false positives when multiple datapoints converge.
 * **MEDIUM**: 31.0 - 60.99 $\rightarrow$ Status: `FLAGGED` (Generates Alert)
 * **HIGH**: 61.0 - 100.0 $\rightarrow$ Status: `FLAGGED` (Generates Alert)
 
-## 🌐 6. Complete API Documentation
+## 6. Complete API Documentation
 
 *(All protected endpoints expect a standard `Authorization: Bearer <JWT>` header).*
 
-### 🔐 Auth Controller (`/api/v1/auth`)
+### Auth Controller (`/api/v1/auth`)
 | Method | Endpoint | Description | Request Example | Response Example |
 | :--- | :--- | :--- | :--- | :--- |
 | POST | `/login/candidate` | Candidate Authentication | `{"email":"test@x.com","password":"123"}` | `{"success":true,"data":{"token":"eyJ...","email":"test@x.com","fullName":"John","expiresInSeconds":900}}` |
@@ -134,7 +134,7 @@ Applied to mitigate false positives when multiple datapoints converge.
 | POST | `/register/candidate`| Candidate Signup | `{"fullName":"John","email":"test@x.com","password":"123","phone":"1234"}` | `{"success":true,"data":{"token":"eyJ..."}}` |
 | POST | `/logout` | Invalidates JWT via Redis | `{}` | `{"success":true,"message":"Logged out successfully"}` |
 
-### 👨‍💼 Admin Management (`/api/v1/admin`)
+### Admin Management (`/api/v1/admin`)
 | Method | Endpoint | Description | Request Example | Response Example |
 | :--- | :--- | :--- | :--- | :--- |
 | POST | `/users/officers` | Provision L1/L2 Officer | `{"fullName":"X","email":"x@x.com","role":"ROLE_OFFICER_L1"}`| `{"success":true,"message":"Officer provisioned"}` |
@@ -148,7 +148,7 @@ Applied to mitigate false positives when multiple datapoints converge.
 | GET | `/system-configs` | Config Grid (Masks secrets)| `{}` | `{"success":true,"data":[{"configKey":"SLA_MINUTES"}]}` |
 | PUT | `/system-configs/{id}`| Maker Config Request | `{"configValue":"60","description":"Update"}` | `{"success":true,"message":"Pending approval"}` |
 
-### 📄 Candidate Profile (`/api/v1/candidates/profile`)
+### Candidate Profile (`/api/v1/candidates/profile`)
 | Method | Endpoint | Description | Request Example | Response Example |
 | :--- | :--- | :--- | :--- | :--- |
 | GET | `/status` | View Onboarding Progress | `{}` | `{"success":true,"data":{"isSubmitted":true}}` |
@@ -160,7 +160,7 @@ Applied to mitigate false positives when multiple datapoints converge.
 | POST | `/documents/re-upload`| Fix Rejected Doc | `FormData(file, candidateDocumentType=PAN_CARD)` | `{"success":true,"data":{"status":"PENDING"}}` |
 | GET | `/documents` | List My Docs | `?status=REJECTED` | `{"success":true,"data":[{"fileUrl":"..."}]}` |
 
-### 🔍 Officer Operations (`/api/v1/officer`)
+### Officer Operations (`/api/v1/officer`)
 | Method | Endpoint | Description | Request Example | Response Example |
 | :--- | :--- | :--- | :--- | :--- |
 | GET | `/documents/candidates/pending`| Get Doc Verifications | `{}` | `{"success":true,"data":[{"status":"FORM_SUBMITTED"}]}` |
@@ -180,7 +180,7 @@ Applied to mitigate false positives when multiple datapoints converge.
 | POST | `/cases/{id}/resolve` | L2 final decision | `{"outcome":"REJECTED","outcomeReason":"Confirmed match"}`| `{"success":true}` |
 | POST | `/cases/{id}/notes` | Append Audit Note | `{"content":"Called applicant"}`| `{"success":true,"data":{"noteType":"INVESTIGATION"}}` |
 
-### 🚨 Screening & Watchlist (`/api/v1/screening` & `/api/v1/watchlist`)
+### Screening & Watchlist (`/api/v1/screening` & `/api/v1/watchlist`)
 | Method | Endpoint | Description | Request Example | Response Example |
 | :--- | :--- | :--- | :--- | :--- |
 | POST | `/screening/candidates/{id}/re-screen`| Trigger engine | `{}` | `{"success":true,"data":{"riskLevel":"HIGH"}}` |
@@ -189,7 +189,7 @@ Applied to mitigate false positives when multiple datapoints converge.
 | GET | `/watchlist` | Global Watchlist Grid | `?search=Dawood` | `{"success":true,"data":{"content":[]}}` |
 | GET | `/watchlist/search` | Officer fuzzy manual search| `?name=Vijay` | `{"success":true,"data":[{"primaryName":"Vijay Mallya"}]}` |
 
-## 🗄️ 8. Database Design
+## 8. Database Design
 
 ### Core Entities & Relationships
 1.  **`users` (`AppUser`)**:
@@ -209,7 +209,7 @@ Applied to mitigate false positives when multiple datapoints converge.
     * `cases` represent the human workflow. They track SLA (`sla_due_date`, `is_sla_breached`), assignment IDs, and resolution outcomes.
     * *Relationships*: `cases` have a `1:N` strictly *append-only* relationship to `case_notes`.
 
-## 🔐 9. Security & Roles
+## 9. Security & Roles
 
 ### Authentication
 * **Token**: Stateless JWT issued via `UsernamePasswordAuthenticationToken`.
@@ -223,7 +223,7 @@ Roles are expanded into granular permissions in `RolePermissions.java`.
 * **`ROLE_ADMIN`**: Can manage users, trigger manual re-screens, view reports, and request `SYSTEM_CONFIG_MANAGE` changes.
 * **`ROLE_SUPER_ADMIN`**: Can execute `APPROVAL_APPROVE_REJECT` to finalize Admin configuration changes.
 
-## 🧪 10. How to Run the Project
+## 10. How to Run the Project
 
 ### Prerequisites
 * Java 17 & Maven 3.8+
