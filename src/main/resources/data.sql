@@ -40,6 +40,9 @@ INSERT INTO users (
     ON CONFLICT (email) DO NOTHING;
 
 
+
+
+
 -- 1. Seed Sources
 INSERT INTO watchlist_sources (id, code, name, type, credibility_weight, active, created_at, updated_at, version)
 VALUES
@@ -181,14 +184,15 @@ VALUES
 -- Make sure to advance the sequence tracker so you don't run into ID conflicts on the next insert
 SELECT setval(pg_get_serial_sequence('watchlist_evidence_documents', 'id'), coalesce(max(id), 1)) FROM watchlist_evidence_documents;
 
-
-
 -- 6. Advance sequences so manual IDs don't clash with future auto-inserts
 SELECT setval(pg_get_serial_sequence('watchlist_entries', 'id'), coalesce(max(id), 1)) FROM watchlist_entries;
 SELECT setval(pg_get_serial_sequence('watchlist_sources', 'id'), coalesce(max(id), 1)) FROM watchlist_sources;
 SELECT setval(pg_get_serial_sequence('watchlist_categories', 'id'), coalesce(max(id), 1)) FROM watchlist_categories;
 SELECT setval(pg_get_serial_sequence('watchlist_aliases', 'id'), coalesce(max(id), 1)) FROM watchlist_aliases;
 SELECT setval(pg_get_serial_sequence('watchlist_evidence_documents', 'id'), coalesce(max(id), 1)) FROM watchlist_evidence_documents;
+
+
+
 
 
 -- ==============================================================================
