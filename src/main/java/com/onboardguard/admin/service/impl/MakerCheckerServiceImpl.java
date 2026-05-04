@@ -18,6 +18,7 @@ import com.onboardguard.shared.common.exception.ResourceNotFoundException;
 import com.onboardguard.shared.common.exception.UnauthorizedAccessException;
 import com.onboardguard.shared.config.entity.SystemConfig;
 import com.onboardguard.shared.config.repository.SystemConfigRepository;
+import com.onboardguard.shared.config.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,6 +36,7 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
 
     private final ApprovalRequestRepository approvalRequestRepository;
     private final SystemConfigRepository systemConfigRepository;
+    private final SystemConfigService systemConfigService;
     private final AppUserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
@@ -140,6 +142,13 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
 //        config.setIsSensitive(payload.isSensitive());
 
         systemConfigRepository.save(config);
+
+        // IMPORTANT: ensure Redis cache for this key is evicted so runtime readers pick up the new value
+        try {
+            systemConfigService.evictCache(config.getConfigKey());
+        } catch (Exception e) {
+            log.warn("Failed to evict SystemConfig cache for key '{}'. Redis may be down.", config.getConfigKey(), e);
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
