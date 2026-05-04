@@ -110,7 +110,17 @@ VALUES
 (1027, 5, 4, 'Suresh Accountant', 'SURESHACCOUNTANT', 'MEDIUM', NULL, '888800001027', 'Indian', '{"status":"License Revoked"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 (1028, 3, 7, 'Global Infra Vendor', 'GLOBALINFRAVENDOR', 'LOW', NULL, '888800001028', 'Indian', '{"issue":"Contract Violation"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
 (1029, 6, 7, 'JobFast India', 'JOBFASTINDIA', 'MEDIUM', NULL, '888800001029', 'Indian', '{"issue":"Recruitment Scam"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
-(1030, 1, 3, 'Deepak Boxer', 'DEEPAKBOXER', 'HIGH', NULL, '888800001030', 'Indian', '{"crime":"Organized Crime"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+(1030, 1, 3, 'Deepak Boxer', 'DEEPAKBOXER', 'HIGH', NULL, '888800001030', 'Indian', '{"crime":"Organized Crime"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+
+-- Vivek Dadhaniya (Additional Record 2): Criminal via CBI India
+(1031, 1, 3, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'HIGH', 'ABCDV1234E', '888800001009', 'Indian', '{"crime":"Money Laundering", "status":"Wanted"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+
+-- Vivek Dadhaniya (Additional Record 3): Fraud via SEBI Debarred Entities
+(1032, 2, 4, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'HIGH', 'ABCDV1234E', '888800001009', 'Indian', '{"case":"Insider Trading", "penalty":"Debarred for 5 years"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+
+-- Vivek Dadhaniya (Additional Record 4): Employment Issue via Internal HR
+(1033, 6, 7, 'Vivek Dadhaniya', 'VIVEKDADHANIYA', 'MEDIUM', NULL, '888800001009', 'Indian', '{"issue":"Falsified Corporate Records"}'::jsonb, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
 
 -- 4. Seed Aliases (Added source_id)
 INSERT INTO watchlist_aliases (id, entry_id, source_id, alias_name, alias_name_normalized, alias_type, created_at, updated_at, version)

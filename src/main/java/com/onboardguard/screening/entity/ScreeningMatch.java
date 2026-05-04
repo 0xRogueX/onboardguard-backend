@@ -7,8 +7,10 @@ import com.onboardguard.watchlist.entity.WatchlistEntry;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "screening_matches",
         indexes = {
                 @Index(name = "idx_sm_result_id", columnList = "screening_result_id"),

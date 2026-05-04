@@ -7,8 +7,10 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "case_notes")
 @Getter
 @Setter
@@ -40,11 +42,4 @@ public class CaseNote {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
-
-//    public enum NoteType {
-//        INVESTIGATION,     // General officer thoughts
-//        EVIDENCE_LINK,     // URL or reference to a document
-//        ESCALATION_MEMO,   // The specific note written when sending to L2
-//        SYSTEM_ACTION      // Automated notes (e.g., "SLA breached at 14:00")
-//    }
 }

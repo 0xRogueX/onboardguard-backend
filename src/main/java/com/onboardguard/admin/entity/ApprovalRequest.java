@@ -11,8 +11,10 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "approval_requests")
 @Data
 @Builder

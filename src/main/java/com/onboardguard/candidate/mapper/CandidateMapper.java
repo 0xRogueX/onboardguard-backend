@@ -3,6 +3,7 @@ package com.onboardguard.candidate.mapper;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.candidate.dto.request.PersonalDetailsRequestDto;
 import com.onboardguard.candidate.dto.request.ProfessionalDetailsRequestDto;
+import com.onboardguard.candidate.dto.response.CandidateProfileResponseDto;
 import com.onboardguard.candidate.dto.response.CandidateStatusResponseDto;
 import com.onboardguard.candidate.dto.response.DocumentResponseDto;
 import com.onboardguard.candidate.entity.Candidate;

@@ -11,6 +11,7 @@ import com.onboardguard.admin.repository.ApprovalRequestRepository;
 import com.onboardguard.admin.service.MakerCheckerService;
 import com.onboardguard.auth.entity.AppUser;
 import com.onboardguard.auth.repository.AppUserRepository;
+import com.onboardguard.shared.common.context.RevisionContext;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import com.onboardguard.shared.common.events.BusinessLogEvent;
 import com.onboardguard.shared.common.exception.ResourceNotFoundException;
@@ -80,18 +81,26 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
             throw new IllegalArgumentException("A rejection reason must be provided.");
         }
 
-        // Execute business logic if approved
-        if (reviewDto.status() == RequestStatus.APPROVED) {
-            applyApprovedPayload(request);
+        // Set the RevisionContext action type for Envers
+        String actionType = reviewDto.status() == RequestStatus.APPROVED ? "MAKER_CHECKER_APPROVED" : "MAKER_CHECKER_REJECTED";
+        RevisionContext.setCurrentAction(actionType);
+
+        try {
+            // Execute business logic if approved
+            if (reviewDto.status() == RequestStatus.APPROVED) {
+                applyApprovedPayload(request);
+            }
+
+            // Update the Approval Request Ledger
+            request.setStatus(reviewDto.status());
+            request.setRejectionReason(reviewDto.rejectionReason());
+            request.setReviewedBy(checker.getId());
+            request.setReviewedAt(Instant.now());
+
+            approvalRequestRepository.save(request);
+        } finally {
+            RevisionContext.clear();
         }
-
-        // Update the Approval Request Ledger
-        request.setStatus(reviewDto.status());
-        request.setRejectionReason(reviewDto.rejectionReason());
-        request.setReviewedBy(checker.getId());
-        request.setReviewedAt(Instant.now());
-
-        approvalRequestRepository.save(request);
 
         // Fire Audit Log for the Target Entity (The Diary)
         publishReviewAudit(request, checker, reviewDto.status(), reviewDto.rejectionReason());

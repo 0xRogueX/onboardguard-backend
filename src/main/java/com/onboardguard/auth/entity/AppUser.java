@@ -5,10 +5,12 @@ import com.onboardguard.shared.common.enums.RoleCode;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
 
 import java.time.Instant;
 
 @Entity
+@Audited
 @Table(name = "users")
 @Getter
 @Setter

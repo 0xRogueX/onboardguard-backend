@@ -5,6 +5,8 @@ import com.onboardguard.admin.repository.ApprovalRequestRepository;
 import com.onboardguard.admin.service.ReportService;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.enums.OnboardingStatus;
+import com.onboardguard.officer.repository.AlertRepository;
+import com.onboardguard.officer.repository.CaseRepository;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +23,9 @@ public class ReportServiceImpl implements ReportService {
 
     // Injecting the required repositories to aggregate data
     private final ApprovalRequestRepository approvalRequestRepository;
-
-     private final CandidateRepository candidateRepository;
-    // private final AlertRepository alertRepository;
-    // private final CaseRepository caseRepository;
+    private final CandidateRepository candidateRepository;
+    private final AlertRepository alertRepository;
+    private final CaseRepository caseRepository;
 
     /**
      * Generates the entire Dashboard.
@@ -39,7 +40,7 @@ public class ReportServiceImpl implements ReportService {
 
         // 1. Gather Candidate Stats
         DashboardReportDto.CandidateStats candidateStats = DashboardReportDto.CandidateStats.builder()
-                .totalOnboarded(candidateRepository.count())
+                .totalOnboarded(candidateRepository.countByOnboardingStatus(OnboardingStatus.APPROVED))
                 .pendingScreening(candidateRepository.countByOnboardingStatus(OnboardingStatus.SCREENING_IN_PROGRESS))
                 .cleared(candidateRepository.countByOnboardingStatus(OnboardingStatus.SCREENING_CLEARED))
                 .flagged(candidateRepository.countByOnboardingStatus(OnboardingStatus.FLAGGED))
@@ -47,18 +48,18 @@ public class ReportServiceImpl implements ReportService {
 
         // 2. Gather Alert Stats
         DashboardReportDto.AlertStats alertStats = DashboardReportDto.AlertStats.builder()
-                .totalGenerated(400L)      // alertRepository.count()
-                .openAlerts(45L)           // alertRepository.countByStatus("OPEN")
-                .dismissedFalsePositives(300L)
-                .escalatedToCases(55L)
+                .totalGenerated(alertRepository.count())
+                .openAlerts(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.OPEN))
+                .dismissedFalsePositives(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.CLOSED))
+                .escalatedToCases(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.CONVERTED_TO_CASE))
                 .build();
 
         // 3. Gather Case Stats
         DashboardReportDto.CasePerformanceStats caseStats = DashboardReportDto.CasePerformanceStats.builder()
-                .totalOpenCases(15L)
-                .totalResolvedCases(40L)
-                .averageResolutionTimeHours(24.5) // caseRepository.getAverageResolutionTime()
-                .slaBreachedCases(3L)             // caseRepository.countSlaBreached()
+                .totalOpenCases(caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.OPEN) + caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.IN_REVIEW))
+                .totalResolvedCases(caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.RESOLVED))
+                .averageResolutionTimeHours(0.0) // Mocked or calculated elsewhere
+                .slaBreachedCases(caseRepository.countByIsSlaBreachedTrue())
                 .build();
 
         // 4. Gather Category Hit Frequency (Mocked map for example)
