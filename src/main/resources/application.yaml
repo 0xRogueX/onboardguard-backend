@@ -109,4 +109,4 @@ async:
 onboardguard:
   seeder:
     cloudinary-folder:
-      enabled: true
+      enabled: false
