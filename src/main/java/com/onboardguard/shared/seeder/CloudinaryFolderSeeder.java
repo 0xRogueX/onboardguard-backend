@@ -30,7 +30,7 @@ public class CloudinaryFolderSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        boolean runSeeder = false; // Set to false after running once!
+        boolean runSeeder = false; // Set to false after running once
 
         if (!runSeeder) return;
 
