@@ -41,7 +41,6 @@ public class ScreeningResult extends BaseEntity {
     @Column(nullable = false)
     private RiskLevel riskLevel;
 
-    // PENDING / IN_PROGRESS / CLEAR / FLAGGED / REVIEW_NEEDED / RE_SCREENED
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ScreeningStatus status;
@@ -62,13 +61,10 @@ public class ScreeningResult extends BaseEntity {
     private Instant screeningStartedAt;
     private Instant screeningCompletedAt;
 
-    // All individual watchlist matches that contributed to the score
-    // CascadeType.ALL: matches are owned by the result — delete result → delete matches
     @OneToMany(mappedBy = "screeningResult", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ScreeningMatch> matches = new ArrayList<>();
 
-    // Helper — keeps both sides of the relationship in sync
     public void addMatch(ScreeningMatch match) {
         match.setScreeningResult(this);
         this.matches.add(match);

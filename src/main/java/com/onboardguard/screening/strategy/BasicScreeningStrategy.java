@@ -77,7 +77,6 @@ public class BasicScreeningStrategy implements ScreeningStrategy {
                 .build();
     }
 
-    // Per-entry basic checks
     private List<MatchDetailDto> checkEntryBasic(CandidateScreeningData c, WatchlistEntry entry) {
         List<MatchDetailDto> matches = new ArrayList<>();
 
@@ -149,11 +148,7 @@ public class BasicScreeningStrategy implements ScreeningStrategy {
         return matches;
     }
 
-    /**
-     * Determine the corroboration level for this entry based on how many
-     * ID fields also match. This is used by the scoring engine to pick the
-     * right multiplier (0.5 -> 1.0).
-     */
+    // multiplier (0.5 -> 1.0)
     private CorroborationLevel resolveCorroboration(CandidateScreeningData c, WatchlistEntry entry) {
         boolean panMatch    = isNotBlank(c.getPanNumber())
                 && c.getPanNumber().equalsIgnoreCase(entry.getPanNumber());

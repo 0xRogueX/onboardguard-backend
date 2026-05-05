@@ -8,11 +8,7 @@ import lombok.Getter;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * The complete output of a screening run.
- * Returned from the strategy, persisted by ScreeningOrchestrationService,
- * and also returned to the caller (e.g. controller, event listener).
- */
+
 @Getter
 @Builder
 public class ScreeningResultDto {

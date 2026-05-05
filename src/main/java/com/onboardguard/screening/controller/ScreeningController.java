@@ -19,7 +19,6 @@ public class ScreeningController {
     private final ScreeningOrchestrationService orchestrationService;
     private final ScreeningQueryService queryService;
 
-    // Manually trigger a re-screen for a candidate.
     @PostMapping("/candidates/{candidateId}/re-screen")
     public ResponseEntity<ApiResponse<ScreeningResultDto>> reScreen(@PathVariable Long candidateId) {
         ScreeningResultDto result = orchestrationService.runScreening(candidateId);

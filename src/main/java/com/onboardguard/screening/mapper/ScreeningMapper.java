@@ -12,20 +12,7 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-/**
- * Single MapStruct mapper for the entire screening module.
- *
- * Responsibilities:
- *  1.  Candidate entity         → CandidateScreeningData   (strategy input)
- *  2.  MatchDetailDto           → ScreeningMatch entity     (persist after screening)
- *  3.  ScreeningResult entity   → ScreeningResultDto        (full, with matches)
- *  4.  ScreeningResult entity   → ScreeningResultDto        (summary, no matches list)
- *  5.  ScreeningMatch entity    → MatchDetailDto            (case detail view)
- *  6.  ScreeningResultDto       → ScreeningResult entity    (update/merge — @MappingTarget)
- *  7.  List variants of 2, 3, 4, 5
- *  8.  riskLevelToStatus()      helper used by orchestration service
- *
- */
+
 @Mapper(
         componentModel       = "spring",
         unmappedTargetPolicy = ReportingPolicy.ERROR,
@@ -38,15 +25,6 @@ public interface ScreeningMapper {
     //     Called by: ScreeningOrchestrationService.buildCandidateData()
     // =========================================================================
 
-    /**
-     * Maps the Candidate JPA entity to the flat DTO consumed by every strategy.
-     *
-     * candidateType: MapStruct maps Enum → String by calling toString() by default.
-     * We use an expression to guarantee name() is called (not a custom toString).
-     *
-     * Normalized fields (lowercase + trimmed + digits-only) cannot be derived
-     * by MapStruct directly — they are computed in the @AfterMapping below.
-     */
     @Mapping(target = "candidateId",                source = "id")
     @Mapping(target = "fullName",                   source = "fullName")
     @Mapping(target = "panNumber",                  ignore = true)   // normalized in @AfterMapping
@@ -60,14 +38,6 @@ public interface ScreeningMapper {
     @Mapping(target = "designationNormalized",      ignore = true)   // @AfterMapping
     CandidateScreeningData toCandidateScreeningData(Candidate candidate);
 
-    /**
-     * Fills every normalized / cleaned field after the primary mapping completes.
-     *
-     * Why @AfterMapping on the Builder?
-     * CandidateScreeningData uses @Builder (Lombok immutable) — MapStruct targets
-     * the builder, not the final object. We receive the builder here and set the
-     * derived fields before build() is called.
-     */
     @AfterMapping
     default void normalizeCandidateFields(
             Candidate candidate,

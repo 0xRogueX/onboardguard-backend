@@ -24,7 +24,7 @@ public class ScreeningQueryService {
     private final ScreeningMatchRepository screeningMatchRepository;
     private final ScreeningMapper screeningMapper;
 
-    // Full screening history for a candidate — summary DTOs, no match detail.
+    // Full screening history for a candidate - summary DTOs, no match detail.
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ALERT_VIEW')")
     public List<ScreeningResultDto> getHistory(Long candidateId) {

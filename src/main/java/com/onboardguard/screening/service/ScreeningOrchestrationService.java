@@ -30,16 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Orchestrates the full screening lifecycle:
- *
- *  1. Map Candidate → CandidateScreeningData  (via ScreeningMapper)
- *  2. Resolve active ScreeningStrategy at RUNTIME from SystemConfig  (Dynamic DI)
- *  3. Invoke strategy → get ScreeningResultDto
- *  4. Merge result into the PENDING entity    (via ScreeningMapper.updateScreeningResultFromDto)
- *  5. Map MatchDetailDtos → ScreeningMatch entities  (via ScreeningMapper)
- *  6. Persist everything, trigger alert, update candidate status
- */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,17 +60,14 @@ public class ScreeningOrchestrationService {
             throw new IllegalStateException("Screening already in progress for candidate: " + candidateId);
         }
 
-        // 1. Resolve strategy (Dynamic DI - reads DB config on every call)
         ScreeningStrategy strategy = resolveActiveStrategy();
         log.info("Using strategy={} for candidateId={}", strategy.strategyName(), candidateId);
 
-        // 2. Build input DTO via mapper (no manual normalize() calls needed)
         CandidateScreeningData candidateData = screeningMapper.toCandidateScreeningData(candidate);
 
-        // 3. Create PENDING result row immediately (candidate sees "In Progress")
+        // Create PENDING result row immediately (candidate sees "In Progress")
         ScreeningResult pendingResult = createPendingResult(candidate, strategy.strategyName());
 
-        // 4. Mark IN_PROGRESS
         pendingResult.setStatus(ScreeningStatus.IN_PROGRESS);
         pendingResult.setScreeningStartedAt(Instant.now());
         screeningResultRepository.save(pendingResult);
@@ -88,34 +76,29 @@ public class ScreeningOrchestrationService {
         candidateRepository.save(candidate);
 
         try {
-            // 5. Run the strategy
             ScreeningResultDto resultDto = strategy.screen(candidateData);
 
-            // 6. Merge strategy output into the existing PENDING entity via mapper
-            //    (updates riskScore, riskLevel, status, timestamps - never touches id/thresholds)
             screeningMapper.updateScreeningResultFromDto(resultDto, pendingResult);
 
-            // 7. Build and attach ScreeningMatch entities via mapper
             persistMatches(resultDto, pendingResult);
 
-            // 8. Save the fully populated result
             ScreeningResult savedResult = screeningResultRepository.save(pendingResult);
 
-            // 9. Update candidate status using mapper helper (riskLevelToStatus)
+            // Update candidate status using mapper helper (riskLevelToStatus)
             ScreeningStatus newStatus = ScreeningStatus.valueOf(screeningMapper.riskLevelToStatus(resultDto.getRiskLevel()).name());
             candidate.setScreeningStatus(newStatus);
             candidateRepository.save(candidate);
 
-            // 10. Trigger alert if MEDIUM or HIGH — NOW ACTIVE!
+            // Trigger alert if MEDIUM or HIGH - NOW ACTIVE
             if (resultDto.getRiskLevel() == RiskLevel.MEDIUM
                     || resultDto.getRiskLevel() == RiskLevel.HIGH) {
                 alertService.createAlert(savedResult);
             } else {
-                // 11. AUTO-APPROVE if LOW risk
+                // AUTO-APPROVE if LOW risk
                 candidate.setOnboardingStatus(OnboardingStatus.APPROVED);
                 candidateRepository.save(candidate);
 
-                // 12. Send clearance email
+                // Send clearance email
                 eventPublisher.publishEvent(new CaseResolvedEvent(
                         candidate.getUser().getEmail(),
                         candidate.getFullName(),
@@ -128,7 +111,7 @@ public class ScreeningOrchestrationService {
             log.info("Screening complete candidateId={} score={} level={}",
                     candidateId, resultDto.getRiskScore(), resultDto.getRiskLevel());
 
-            // 13. Return summary DTO (no match list — caller fetches matches separately)
+            // Return summary DTO (no match list — caller fetches matches separately)
             return screeningMapper.toScreeningResultDtoSummary(savedResult);
 
         } catch (Exception ex) {
@@ -141,7 +124,7 @@ public class ScreeningOrchestrationService {
         }
     }
 
-    // Dynamic DI — Read active strategy from SystemConfig
+    // Dynamic DI - Read active strategy from SystemConfig
     private ScreeningStrategy resolveActiveStrategy() {
         String configured = systemConfigService.getString(
                 ConfigConstants.ACTIVE_SCREENING_STRATEGY,

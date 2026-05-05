@@ -24,7 +24,7 @@ public class MatchDetailDto {
     private String candidateFieldValue;
     private String watchlistFieldValue;
 
-    // Similarity score — null for exact matches
+    // Similarity score - null for exact matches
     private Double similarityScore;
 
     // Score breakdown

@@ -5,11 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * Flat snapshot of a candidate's data passed to the screening engine.
- * Using a dedicated DTO means strategies never hold a reference to the
- * Candidate JPA entity, keeping them stateless and testable.
- */
 @Getter
 @Builder
 @NoArgsConstructor
@@ -31,6 +26,6 @@ public class CandidateScreeningData {
     private String designation;
     private String designationNormalized;
 
-    // Type (Employee / Vendor / Contractor) — for future rule extensions
+    // Type (Employee / Vendor / Contractor) - for future rule extensions
     private String candidateType;
 }

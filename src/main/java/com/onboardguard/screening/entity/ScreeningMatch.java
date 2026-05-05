@@ -23,22 +23,14 @@ import org.hibernate.envers.Audited;
 @SuperBuilder
 public class ScreeningMatch extends BaseEntity {
 
-    // Parent result
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "screening_result_id", nullable = false)
     private ScreeningResult screeningResult;
 
-    // The watchlist entry that was matched
-    // NOT_AUDITED because we store a snapshot — we don't want Hibernate Envers
-    // to try to revision-track the watchlist entry through this relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "watchlist_entry_id", nullable = false)
     private WatchlistEntry watchlistEntry;
 
-    // What matched
-
-    // NAME_EXACT / NAME_FUZZY / NAME_ALIAS_EXACT / NAME_ALIAS_FUZZY /
-    // PAN_EXACT / AADHAAR_EXACT / ORG_EXACT / ORG_FUZZY / DESIGNATION_EXACT
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MatchType matchType;
@@ -57,7 +49,6 @@ public class ScreeningMatch extends BaseEntity {
     private Double similarityScore;
 
     // Scoring snapshot
-
     // Base points from the scoring table (e.g. +40 for exact name, +25 for fuzzy)
     @Column(nullable = false)
     private Double basePoints;
@@ -85,7 +76,7 @@ public class ScreeningMatch extends BaseEntity {
     private CorroborationLevel corroborationLevel;
 
     // Snapshot of watchlist entry's primary name at match time
-    // (entry may be modified later — this preserves audit integrity)
+    // (entry may be modified later - this preserves audit integrity)
     @Column(nullable = false)
     private String watchlistEntryPrimaryNameSnapshot;
 

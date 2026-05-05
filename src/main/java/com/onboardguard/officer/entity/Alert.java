@@ -42,7 +42,6 @@ public class Alert {
     @Column(nullable = false)
     private AlertStatus status;
 
-    // Hibernate 6 magic: Automatically maps Java List<String> to PostgreSQL JSONB
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "matched_categories", columnDefinition = "jsonb")
     private List<String> matchedCategories;

@@ -24,39 +24,20 @@ import java.util.*;
 /**
  * Advanced screening with four layers (superset of BasicScreeningStrategy):
  *
- *   Layer 1 — Initials expansion   "R.S. Sharma" matches "Rohit S. Sharma"
- *   Layer 2 — Fuzzy matching       "Rohit Shrma"  matches "Rohit Sharma"
- *   Layer 3 — Alias lookup         "Ravi Kapoor"  matches if it is a known alias
- *   Layer 4 — Multi-field corroboration
+ *   Layer 1 - Initials expansion   "R.S. Sharma" matches "Rohit S. Sharma"
+ *   Layer 2 - Fuzzy matching       "Rohit Shrma"  matches "Rohit Sharma"
+ *   Layer 3 - Alias lookup         "Ravi Kapoor"  matches if it is a known alias
+ *   Layer 4  Multi-field corroboration
  *               NAME_EXACT / NAME_FUZZY / NAME_ALIAS_* (same as Basic, extended)
  *               PAN_EXACT, AADHAAR_EXACT  (same as Basic)
  *               ORG_EXACT, ORG_FUZZY      (Basic only had ORG_EXACT)
  *               DESIGNATION_EXACT         (new vs Basic)
  *
  * Every check that BasicScreeningStrategy performs is present here:
- *   - NAME_EXACT  : advancedNameMatch() returns exact=true  → MatchType.NAME_EXACT
+ *   - NAME_EXACT  : advancedNameMatch() returns exact=true  -> MatchType.NAME_EXACT
  *   - PAN_EXACT   : Layer 4 block
  *   - AADHAAR_EXACT: Layer 4 block
- *   - ORG_EXACT   : Layer 4 block (orgResult.exact() == true path)
- *
- * BUGS FIXED vs the original doc-10 version:
- *   FIX-1  entry.getSource().getCredibilityWeight()
- *          → entry.getSourceCredibilityWeight()
- *          WatchlistEntry has NO getSource() wrapper — credibility is a direct field.
- *
- *   FIX-2  entry.getSource().getName()
- *          → entry.getSourceName()
- *          Same reason.
- *
- *   FIX-3  entry.getCategory().getCode().name()
- *          → entry.getCategory().getCategoryCode()
- *          WatchlistCategory.categoryCode is already a String, not a CategoryCode enum.
- *          Calling .getCode() would require a method that does not exist.
- *
- *   FIX-4  Layer-4 org null-guard used getOrganizationNameNormalized() for the check
- *          but getOrganizationName() for the actual match.  Unified to getOrganizationName()
- *          for both.  NameMatchingUtil.advancedNameMatch() normalises internally so the
- *          raw value is the correct thing to pass.
+ *   - ORG_EXACT   : Layer 4 block
  */
 @Slf4j
 @Service("advancedScreeningStrategy")
@@ -112,7 +93,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                 .build();
     }
 
-    // PER-ENTRY ADVANCED CHECK  (all four layers)
     private List<MatchDetailDto> checkEntryAdvanced(CandidateScreeningData c,
                                                     WatchlistEntry entry) {
         List<MatchDetailDto> matches = new ArrayList<>();
@@ -125,9 +105,8 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
                                                         false);
         nameMatch.ifPresent(matches::add);
 
-        // LAYER 3: alias lookup — only runs if primary name did NOT match
+        // LAYER 3: alias lookup - only runs if primary name did NOT match
         // Rationale: if the primary name already matched, iterating aliases for
-        // the same entry would just add a lower-confidence duplicate.
         if (nameMatch.isEmpty()) {
             for (WatchlistAlias alias : entry.getAliases()) {
                 Optional<MatchDetailDto> aliasMatch = checkNameMatch(c,
@@ -144,8 +123,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
 
         // LAYER 4: corroborating field checks
         // Only run if we already have at least one name/alias match.
-        // A standalone PAN or Aadhaar match without a name match is too weak
-        // to be meaningful on its own and risks false positives.
         boolean hasNameMatch = !matches.isEmpty();
 
         if (hasNameMatch) {
@@ -197,7 +174,6 @@ public class AdvancedScreeningStrategy implements ScreeningStrategy {
 
             // Designation - exact only (designation strings are too short for
             // reliable fuzzy matching - "Director" vs "Director " would score high
-            // but that is just a whitespace difference handled by normalization)
             if (isNotBlank(c.getDesignation()) && isNotBlank(entry.getDesignation())
                     && c.getDesignation().equalsIgnoreCase(entry.getDesignation())) {
                 matches.add(

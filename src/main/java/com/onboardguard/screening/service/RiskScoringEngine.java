@@ -17,13 +17,13 @@ import java.util.List;
 /**
  * Converts a list of MatchDetailDtos into a single risk score,
  * and classifies that score as LOW / MEDIUM / HIGH.
- * <p>
+ *
  * All thresholds, multipliers, and bonuses are read live from SystemConfig on every call
  * so that admin changes take effect immediately without a restart.
- * <p>
+ *
  * Score formula per match:
  * contribution = (basePoints × sourceCredibility × corroborationMultiplier) + categoryBonus
- * <p>
+ *
  * Final score = sum of all contributions, capped at 100.
  */
 @Slf4j
