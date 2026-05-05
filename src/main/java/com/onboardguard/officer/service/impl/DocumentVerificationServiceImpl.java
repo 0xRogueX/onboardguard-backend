@@ -49,9 +49,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
             OnboardingStatus.DOCUMENTS_UNDER_REVIEW
     );
 
-    // ══════════════════════════════════════════════════════════════
-    // Officer pulls all documents for a specific candidate.
-    // ══════════════════════════════════════════════════════════════
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponseDto> getCandidateDocumentsForReview(Long candidateId) {
@@ -61,15 +58,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
                 .toList();
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // QUEUE VIEW (GRID)
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * GET QUEUE: Returns all unlocked candidates with FORM_SUBMITTED or DOCUMENTS_UNDER_REVIEW status.
-     * This is the fix for the primary bug — candidates set to FORM_SUBMITTED by submitProfile()
-     * now correctly appear in the officer's "Candidate Queue" grid.
-     */
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('DOC_QUEUE_VIEW')")
@@ -84,14 +72,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
                 .toList();
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // QUEUE & CLAIM LOGIC
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * MANUAL PULL: Officer clicks a specific candidate in the grid to lock and claim them.
-     * Transitions status to DOCUMENTS_UNDER_REVIEW so it's visible on the candidate portal.
-     */
+    //MANUAL PULL: Officer clicks a specific candidate in the grid to lock and claim them. Transitions status to DOCUMENTS_UNDER_REVIEW so it's visible on the candidate portal.
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('DOC_CLAIM')")
@@ -111,9 +92,7 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         lockCandidate(candidate, officerId);
     }
 
-    /**
-     * AUTO PUSH (FIFO): Automatically finds the oldest unlocked candidate, locks it, and returns the dashboard.
-     */
+    // AUTO PUSH (FIFO): Automatically finds the oldest unlocked candidate, locks it, and returns the dashboard.
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('DOC_CLAIM')")
@@ -127,9 +106,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         return getCandidateVerificationDetails(nextCandidate.getId());
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // DASHBOARD VIEW
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     @Transactional(readOnly = true)
@@ -145,10 +121,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
 
         return officerCandidateMapper.toDashboardDto(candidate, documents);
     }
-
-    // ══════════════════════════════════════════════════════════════
-    // DOCUMENT VERIFICATION ACTIONS
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     @Transactional
@@ -209,14 +181,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
         eventPublisher.publishEvent(event);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PRIVATE HELPERS
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * Lock the candidate to a specific officer and set status to DOCUMENTS_UNDER_REVIEW
-     * so the candidate portal shows their application is being reviewed.
-     */
     private void lockCandidate(Candidate candidate, Long officerId) {
         candidate.setVerificationLockedBy(officerId);
         candidate.setVerificationLockedAt(Instant.now());
@@ -238,10 +202,6 @@ public class DocumentVerificationServiceImpl implements DocumentVerificationServ
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with ID: " + documentId));
     }
 
-    /**
-     * After each document approval, check if ALL documents are now verified.
-     * If so, set status to DOCUMENTS_VERIFIED, release the lock, and trigger screening.
-     */
     private void checkAndAdvanceCandidateStatus(Long candidateId, Long officerId) {
         List<CandidateDocument> allDocs = documentRepository.findByCandidateId(candidateId);
 

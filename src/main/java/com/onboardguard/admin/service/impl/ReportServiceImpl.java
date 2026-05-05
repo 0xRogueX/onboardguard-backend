@@ -7,6 +7,8 @@ import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.officer.repository.AlertRepository;
 import com.onboardguard.officer.repository.CaseRepository;
+import com.onboardguard.shared.common.enums.AlertStatus;
+import com.onboardguard.shared.common.enums.CaseStatus;
 import com.onboardguard.shared.common.enums.RequestStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,15 +51,15 @@ public class ReportServiceImpl implements ReportService {
         // 2. Gather Alert Stats
         DashboardReportDto.AlertStats alertStats = DashboardReportDto.AlertStats.builder()
                 .totalGenerated(alertRepository.count())
-                .openAlerts(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.OPEN))
-                .dismissedFalsePositives(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.CLOSED))
-                .escalatedToCases(alertRepository.countByStatus(com.onboardguard.shared.common.enums.AlertStatus.CONVERTED_TO_CASE))
+                .openAlerts(alertRepository.countByStatus(AlertStatus.OPEN))
+                .dismissedFalsePositives(alertRepository.countByStatus(AlertStatus.CLOSED))
+                .escalatedToCases(alertRepository.countByStatus(AlertStatus.CONVERTED_TO_CASE))
                 .build();
 
         // 3. Gather Case Stats
         DashboardReportDto.CasePerformanceStats caseStats = DashboardReportDto.CasePerformanceStats.builder()
-                .totalOpenCases(caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.OPEN) + caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.IN_REVIEW))
-                .totalResolvedCases(caseRepository.countByStatus(com.onboardguard.shared.common.enums.CaseStatus.RESOLVED))
+                .totalOpenCases(caseRepository.countByStatus(CaseStatus.OPEN) + caseRepository.countByStatus(CaseStatus.IN_REVIEW))
+                .totalResolvedCases(caseRepository.countByStatus(CaseStatus.RESOLVED))
                 .averageResolutionTimeHours(0.0) // Mocked or calculated elsewhere
                 .slaBreachedCases(caseRepository.countByIsSlaBreachedTrue())
                 .build();

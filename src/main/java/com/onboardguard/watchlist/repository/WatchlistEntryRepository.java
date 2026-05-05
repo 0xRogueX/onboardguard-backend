@@ -1,6 +1,7 @@
 package com.onboardguard.watchlist.repository;
 
 import com.onboardguard.shared.common.enums.CategoryCode;
+import com.onboardguard.shared.common.enums.SeverityLevel;
 import com.onboardguard.watchlist.entity.WatchlistEntry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,25 +36,16 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
     Page<WatchlistEntry> findWithFilters(
             @Param("query") String query,
             @Param("category") CategoryCode category,
-            @Param("severity") com.onboardguard.shared.common.enums.SeverityLevel severity,
+            @Param("severity") SeverityLevel severity,
             Pageable pageable);
 
     @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
             "AND e.category.code = :categoryCode " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom  <= CURRENT_DATE )" +
             "AND (e.effectiveTo IS NULL OR e.effectiveTo >= CURRENT_DATE )")
-    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") com.onboardguard.shared.common.enums.CategoryCode categoryCode, Pageable pageable);
+    Page<WatchlistEntry> findAllActiveAndEffectiveByCategory(@Param("categoryCode") CategoryCode categoryCode, Pageable pageable);
 
     Page<WatchlistEntry> findByIsActiveTrue(Pageable pageable);
-
-    // ── Tier-1 exact ID match (called by WatchlistService / Screening) ────────
-    //
-    // FIX: Previous version only guarded on pan/aadhaar being null but still
-    // passed null values to the query when only din/cin was provided, causing
-    // all four parameters to be null and returning no rows.  The query itself
-    // is correct (OR conditions handle nulls gracefully); the null-guard in the
-    // service layer is what needed fixing — but we also add an active+effective
-    // filter here so expired entries never return from Tier-1.
 
     @Query("SELECT e FROM WatchlistEntry e WHERE e.isActive = true " +
             "AND (e.effectiveFrom IS NULL OR e.effectiveFrom <= CURRENT_DATE) " +
@@ -97,10 +89,6 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry ,
             "AND (e.effectiveTo   IS NULL OR e.effectiveTo   >= :screeningDate)")
     List<WatchlistEntry> findAllActiveOnDateWithAliases(@Param("screeningDate") LocalDate date);
 
-    // This was the original Tier-1 method.  It is still wired in
-    // WatchlistServiceImpl.findExactIdMatch() — that service method itself now
-    // delegates to findActiveExactIdMatch() above once the service is updated.
-    // Left here to avoid a compile error while the migration is in progress.
     List<WatchlistEntry> findByPanNumberOrAadhaarNumberOrDinNumberOrCinNumber(
             String pan, String aadhaar, String din, String cin);
 }

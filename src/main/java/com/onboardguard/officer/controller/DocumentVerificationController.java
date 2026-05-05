@@ -18,20 +18,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/officer/documents")
 @RequiredArgsConstructor
-//@PreAuthorize("hasAnyRole('ROLE_OFFICER_L1', 'ROLE_SUPER_ADMIN')") // L1 is typically the Maker for KYC docs
 public class DocumentVerificationController {
 
     private final DocumentVerificationService documentVerificationService;
     private final SecurityUtils securityUtils;
 
-    // ══════════════════════════════════════════════════════════════
-    // 1. QUEUE & CLAIM ENDPOINTS
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * POST: Auto-assigns the oldest waiting candidate to the officer (FIFO Push Model).
-     * Instantly returns the full dashboard data so the UI can route to the verification screen.
-     */
     @PostMapping("/candidates/assign-next")
     public ResponseEntity<ApiResponse<CandidateVerificationDashboardDto>> claimNextAvailableCandidate() {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
@@ -44,10 +35,6 @@ public class DocumentVerificationController {
         ));
     }
 
-    /**
-     * POST: Manually claim a specific candidate from the UI grid (Pull Model).
-     * Locks the candidate to prevent collision with other officers.
-     */
     @PostMapping("/candidates/{candidateId}/claim")
     public ResponseEntity<ApiResponse<Void>> claimCandidate(@PathVariable Long candidateId) {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();

@@ -68,10 +68,7 @@ public class ApprovalRequest {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
-    /**
-     * Automatically sets the requested timestamp right before Hibernate
-     * inserts the record into the database.
-     */
+    // Automatically sets the requested timestamp right before Hibernate inserts the record into the database.
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) {

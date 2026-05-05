@@ -34,10 +34,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     Optional<Alert> findFirstByStatusOrderBySlaDeadlineAsc(AlertStatus status);
 
-    /**
-     * Bulk updates all active alerts where the SLA deadline has passed.
-     * Returns the integer count of exactly how many rows were updated.
-     */
     @Modifying
     @Query("""
         UPDATE Alert a
@@ -56,8 +52,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findOpenAlertsForQueue(@Param("status") AlertStatus status);
 
     List<Alert> findByIsSlaBreachedTrueAndStatusNot(AlertStatus status);
-
-    Page<Alert> findByStatusOrderBySlaDeadlineAsc(AlertStatus status, Pageable pageable);
 
     long countByStatus(AlertStatus status);
 }

@@ -2,6 +2,7 @@ package com.onboardguard.officer.service.impl;
 
 
 import com.onboardguard.candidate.entity.Candidate;
+import com.onboardguard.candidate.enums.OnboardingStatus;
 import com.onboardguard.candidate.repository.CandidateRepository;
 import com.onboardguard.officer.dto.AlertDetailDto;
 import com.onboardguard.officer.entity.Alert;
@@ -80,9 +81,6 @@ public class AlertServiceImpl implements AlertService {
         return alertMapper.toDto(alertRepository.save(alert));
     }
 
-    /**
-     * GET NEXT ALERT: Fetches the most urgent OPEN alert and instantly locks it for the officer.
-     */
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ALERT_CLAIM')")
@@ -126,7 +124,7 @@ public class AlertServiceImpl implements AlertService {
         Candidate candidate = candidateRepository.findById(alert.getCandidateId())
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
-        candidate.setOnboardingStatus(com.onboardguard.candidate.enums.OnboardingStatus.APPROVED);
+        candidate.setOnboardingStatus(OnboardingStatus.APPROVED);
         candidateRepository.save(candidate);
 
         // Notify candidate via email
@@ -252,10 +250,6 @@ public class AlertServiceImpl implements AlertService {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PRIVATE HELPERS
-    // ═══════════════════════════════════════════════════════════════
-
     private Alert getAlertById(Long alertId) {
         return alertRepository.findById(alertId)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with ID: " + alertId));
@@ -283,9 +277,6 @@ public class AlertServiceImpl implements AlertService {
         eventPublisher.publishEvent(event);
     }
 
-    /**
-     * Guarantees that only the officer who claimed the alert can close or convert it.
-     */
     private void validateAlertOwnership(Alert alert, Long officerId) {
         if (alert.getStatus() != AlertStatus.IN_REVIEW) {
             throw new BadRequestException("Alert must be IN_REVIEW before it can be processed. Please claim it first.");

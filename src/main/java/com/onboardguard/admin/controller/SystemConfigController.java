@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.onboardguard.shared.security.RolePermissions;
 
 import java.util.List;
 
@@ -25,17 +26,12 @@ public class SystemConfigController {
     private final SystemConfigAdminService systemConfigAdminService;
     private final SecurityUtils securityUtils;
 
-    /**
-     * MAKER ACTION: Request an update to a system configuration.
-     * Endpoint: PUT /api/v1/admin/system-configs/{configId}
-     */
     @PutMapping("/{configId}")
-    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
+    @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
     public ResponseEntity<ApiResponse<String>> requestConfigUpdate(
             @PathVariable Long configId,
             @Valid @RequestBody UpdateSystemConfigDto updateDto) {
 
-        // 1. Effortlessly extract the Maker's details using your SecurityUtils
         var principal = securityUtils.getCurrentUserPrincipal();
         if (principal == null) {
             log.warn("Unauthenticated request to requestConfigUpdate");
@@ -47,19 +43,13 @@ public class SystemConfigController {
 
         log.info("Admin ID {} is submitting an update request for config ID {}", currentUserId, configId);
 
-        // 2. Pass to the Interceptor Service (Maker flow)
         systemConfigAdminService.requestConfigUpdate(configId, updateDto, currentUserId, currentUserRole);
 
-        // 3. Return a clear success message to the Angular UI
         return ResponseEntity.ok(ApiResponse.success("Configuration update request submitted successfully and is pending Super Admin approval.", null));
     }
 
-    /**
-     * GET ALL CONFIGURATIONS: Returns the configuration grid for the UI.
-     * Endpoint: GET /api/v1/admin/system-configs
-     */
     @GetMapping
-    @PreAuthorize("hasAuthority(T(com.onboardguard.shared.security.RolePermissions).SYSTEM_CONFIG_MANAGE)")
+    @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
     public ResponseEntity<ApiResponse<List<SystemConfigResponseDto>>> getAllConfigs() {
 
         var principal = securityUtils.getCurrentUserPrincipal();

@@ -21,23 +21,15 @@ public class ReportController {
     private final ReportService reportService;
     private final SecurityUtils securityUtils;
 
-    /**
-     * GET DASHBOARD METRICS: Fetches aggregated system statistics for the UI.
-     * Note: The underlying service method is cached in Redis for 10 minutes.
-     * Endpoint: GET /api/v1/admin/dashboard
-     */
     @GetMapping
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<DashboardReportDto>> getDashboardStats() {
 
-        // Log who is accessing the dashboard using our centralized SecurityUtils
         String currentUserEmail = securityUtils.getCurrentUserPrincipal().getEmail();
         log.info("User {} is fetching the dashboard statistics", currentUserEmail);
 
         // Fetch the data (Will hit Redis instantly, or run SQL if cache expired)
         DashboardReportDto dashboardData = reportService.generateDashboard();
 
-        // Wrap the nested record perfectly in our standard ApiResponse
         return ResponseEntity.ok(ApiResponse.success(
                 "Dashboard statistics retrieved successfully",
                 dashboardData

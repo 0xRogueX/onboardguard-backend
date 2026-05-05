@@ -13,9 +13,7 @@ public interface SystemConfigMapper {
     @Mapping(target = "configValue", expression = "java(maskIfSensitive(config))")
     SystemConfigResponseDto toResponseDto(SystemConfig config);
 
-    /**
-     * Custom logic to prevent API Keys or Passwords from leaking to the UI.
-     */
+    //Custom logic to prevent API Keys or Passwords from leaking to the UI.
     default String maskIfSensitive(SystemConfig config) {
         if (config == null) {
             return null;

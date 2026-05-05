@@ -11,7 +11,6 @@ import java.util.Map;
 public record PendingApprovalDto(
         Long id,
 
-        // What is changing?
         ActionType actionType,       // e.g., CREATE, UPDATE, DELETE
         String targetEntityType,     // e.g., "SYSTEM_CONFIG", "WATCHLIST_ENTRY"
         Long targetEntityId,         // Nullable if it's a brand new creation

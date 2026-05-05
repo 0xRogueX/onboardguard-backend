@@ -20,10 +20,6 @@ public class AlertController {
     private final AlertService alertService;
     private final SecurityUtils securityUtils;
 
-    /**
-     * L1 Dashboard:
-     * Shows all OPEN alerts (not yet picked)
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<AlertDetailDto>>> getOpenAlertsQueue() {
 
@@ -34,9 +30,6 @@ public class AlertController {
         );
     }
 
-    /**
-     * POST: Claim an OPEN alert and lock it for review.
-     */
     @PostMapping("/{alertId}/acknowledge")
     public ResponseEntity<ApiResponse<AlertDetailDto>> acknowledgeAlert(@PathVariable Long alertId) {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();
@@ -46,10 +39,8 @@ public class AlertController {
         return ResponseEntity.ok(ApiResponse.success("Alert successfully claimed and locked.", claimedAlert));
     }
 
-    /**
-     * POST: Automatically assigns the oldest OPEN alert to the requesting L1 Officer.
-     * This enforces a strict FIFO (First-In, First-Out) queue and prevents cherry-picking.
-     */
+
+     // This enforces a strict FIFO (First-In, First-Out) queue and prevents cherry-picking.
     @PostMapping("/assign-next")
     public ResponseEntity<ApiResponse<AlertDetailDto>> claimNextAvailableAlert() {
 
@@ -62,10 +53,6 @@ public class AlertController {
         return ResponseEntity.ok(ApiResponse.success("Alert successfully assigned from the queue.", nextAlert));
     }
 
-    /**
-     * POST: Dismiss an alert as a false positive.
-     * Note: Using @RequestParam for the reason is perfect for simple string submissions.
-     */
     @PostMapping("/{alertId}/dismiss")
     public ResponseEntity<ApiResponse<Void>> dismissAlert(
             @PathVariable Long alertId,
@@ -78,9 +65,6 @@ public class AlertController {
         return ResponseEntity.ok(ApiResponse.success("Alert dismissed successfully.", null));
     }
 
-    /**
-     * POST: Convert a valid alert into a full investigation Case.
-     */
     @PostMapping("/{alertId}/convert")
     public ResponseEntity<ApiResponse<Long>> convertToCase(@PathVariable Long alertId) {
         Long currentOfficerId = securityUtils.getCurrentUserPrincipal().getUserId();

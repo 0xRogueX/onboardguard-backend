@@ -33,10 +33,6 @@ public class WatchlistSyncServiceImpl implements WatchlistSyncService {
     private final WatchlistAliasRepository aliasRepository;
     private final WatchlistSearchRepository esRepository;
 
-    // ══════════════════════════════════════════════════════════════
-    // 1. BULK SYNC (Runs once at Startup)
-    // ══════════════════════════════════════════════════════════════
-
     @Override
     @EventListener(ApplicationReadyEvent.class)
     @Transactional(readOnly = true)
@@ -64,10 +60,6 @@ public class WatchlistSyncServiceImpl implements WatchlistSyncService {
         esRepository.saveAll(documents); // BULK save is much faster for startup
         log.info("Successfully seeded {} Watchlist records into Elasticsearch.", documents.size());
     }
-
-    // ══════════════════════════════════════════════════════════════
-    // 2. REAL-TIME SYNC (Triggered by Events)
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     @Async
@@ -104,10 +96,6 @@ public class WatchlistSyncServiceImpl implements WatchlistSyncService {
         log.info("Elasticsearch sync disabled. Skipping sync for entry ID: {}", entryId);
         // Do nothing
     }
-
-    // ══════════════════════════════════════════════════════════════
-    // 3. SHARED MAPPING LOGIC (Keeps code DRY)
-    // ══════════════════════════════════════════════════════════════
 
     private WatchlistDocument mapToDocument(WatchlistEntry entry) {
         List<String> aliases = aliasRepository.findByEntryId(entry.getId()).stream()

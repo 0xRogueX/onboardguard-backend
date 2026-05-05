@@ -41,9 +41,6 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 1. GET INBOX: Fetches all pending requests for the Super Admin Dashboard.
-     */
     @Override
     @Transactional(readOnly = true)
     public List<PendingApprovalDto> getPendingInbox() {
@@ -53,9 +50,6 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
                 .toList();
     }
 
-    /**
-     * 2. PROCESS REVIEW: The Super Admin makes their decision.
-     */
     @Override
     @Transactional
     public void processReview(Long requestId, ReviewApprovalRequestDto reviewDto, String checkerEmail) {
@@ -104,17 +98,11 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
             RevisionContext.clear();
         }
 
-        // Fire Audit Log for the Target Entity (The Diary)
+        // Fire Audit Log for the Target Entity
         publishReviewAudit(request, checker, reviewDto.status(), reviewDto.rejectionReason());
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PRIVATE EXECUTION METHODS
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * Translates the JSON payload into actual database changes.
-     */
+     // Translates the JSON payload into actual database changes.
     private void applyApprovedPayload(ApprovalRequest request) {
         try {
             switch (request.getTargetEntityType()) {
@@ -138,8 +126,6 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
         // Apply changes
         config.setConfigValue(payload.configValue());
         config.setDescription(payload.description());
-//        config.set(payload.isActive());
-//        config.setIsSensitive(payload.isSensitive());
 
         systemConfigRepository.save(config);
 
@@ -151,9 +137,6 @@ public class MakerCheckerServiceImpl implements MakerCheckerService {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // HELPER & MAPPING METHODS
-    // ══════════════════════════════════════════════════════════════
 
     private PendingApprovalDto mapToPendingDto(ApprovalRequest request) {
         try {

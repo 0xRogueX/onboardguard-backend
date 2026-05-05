@@ -26,9 +26,6 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final AuditLogMapper auditLogMapper;
 
-    /**
-     * 1. THE LISTENER: Synchronously catches events fired from Watchlist, Candidate, or Officer modules.
-     */
     @EventListener
     @Transactional
     @Override

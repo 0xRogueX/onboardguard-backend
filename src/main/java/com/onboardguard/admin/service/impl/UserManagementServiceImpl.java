@@ -22,9 +22,6 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final AppUserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * 1. TOGGLE USER STATUS: Activates or Deactivates a user.
-     */
     @Override
     @Transactional
     public void toggleUserStatus(Long targetUserId, Boolean isActive, AppUser currentUser, RoleCode currentUserRole) {
@@ -52,9 +49,6 @@ public class UserManagementServiceImpl implements UserManagementService {
                 currentUserRole.name(), "Admin altered user access.");
     }
 
-    /**
-     * 2. GET ALL USERS: Used to populate the Admin User Grid.
-     */
     @Override
     @Transactional(readOnly = true)
     public Page<AppUser> getAllUsers(Pageable pageable) {

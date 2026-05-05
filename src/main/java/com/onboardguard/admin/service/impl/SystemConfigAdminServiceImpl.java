@@ -34,10 +34,6 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
     private final ApplicationEventPublisher eventPublisher;
     private final SystemConfigMapper systemConfigMapper;
 
-    /**
-     * MAKER ACTION: An Admin requests to update a system configuration.
-     * This does NOT update the config; it creates a PENDING approval request.
-     */
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
@@ -85,10 +81,6 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
         }
     }
 
-    /**
-     * GET ALL CONFIGS: Fetches the system configurations for the Admin UI grid.
-     * Automatically masks sensitive values (like API keys or passwords).
-     */
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('SYSTEM_CONFIG_MANAGE')")
@@ -97,10 +89,6 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
                 .map(systemConfigMapper::toResponseDto)
                 .toList();
     }
-
-    // ══════════════════════════════════════════════════════════════
-    // PRIVATE HELPER METHODS
-    // ══════════════════════════════════════════════════════════════
 
     private void publishMakerAudit(Long configId, Long performedBy, String actorRole, String remarks) {
         eventPublisher.publishEvent(BusinessLogEvent.builder()

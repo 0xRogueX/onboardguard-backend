@@ -26,35 +26,24 @@ import org.springframework.web.bind.annotation.*;
 public class AdminUserController {
 
     private final UserManagementService userManagementService;
-    private final AuthService authService; // Injected for Officer Provisioning
+    private final AuthService authService;
     private final SecurityUtils securityUtils;
     private final AdminUserMapper adminUserMapper;
 
-    /**
-     * 1. CREATE OFFICER: Provision a new L1 or L2 Officer.
-     * Endpoint: POST /api/v1/admin/users/officers
-     */
     @PostMapping("/officers")
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<String>> createOfficer(@Valid @RequestBody CreateOfficerDto dto) {
 
-        // Fetch the currently logged-in Admin safely from the Security Context
         AppUser currentUser = securityUtils.getCurrentUser();
 
         log.info("Admin {} is provisioning a new {}", currentUser.getEmail(), dto.role());
 
-        // Delegate business logic to the Auth module
         authService.createOfficer(dto, currentUser);
 
         return ResponseEntity.ok(ApiResponse.success("Officer provisioned successfully. Temporary credentials have been emailed." , null));
     }
 
-    /**
-     * 2. GET ALL USERS: Fetch paginated list of users for the Admin Grid.
-     * Endpoint: GET /api/v1/admin/users?page=0&size=20
-     */
+
     @GetMapping
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<UserResponseDto>>> getAllUsers(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
@@ -65,17 +54,12 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success("Users Fetched Successfully..." , users.map(adminUserMapper::toDto)));
     }
 
-    /**
-     * 3. TOGGLE STATUS: Activate or deactivate a specific user.
-     * Endpoint: PATCH /api/v1/admin/users/{userId}/status?isActive=true
-     */
     @PatchMapping("/{userId}/status")
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<String>> toggleUserStatus(
             @PathVariable Long userId,
             @RequestParam Boolean isActive) {
 
-        // Effortlessly fetch current user and their role
+        // fetch current user and their role
         AppUser currentUser = securityUtils.getCurrentUser();
         RoleCode currentUserRole = securityUtils.getCurrentUserPrincipal().getRole();
 

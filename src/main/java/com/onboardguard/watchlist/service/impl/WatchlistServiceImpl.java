@@ -47,13 +47,6 @@ public class WatchlistServiceImpl implements WatchlistService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final WatchlistMapper watchlistMapper;
 
-    // ══════════════════════════════════════════════════════════════
-    // UI ENDPOINTS (Called by WatchlistController)
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * Gets a paginated list of all active entries for the Admin Data Grid.
-     */
     @Override
     public Page<WatchlistEntryResponseDto> getAllActiveEntries(String query, CategoryCode categoryCode, SeverityLevel severity, Pageable pageable) {
         log.debug("Fetching paginated watchlist entries with filters: query={}, category={}, severity={}", query, categoryCode, severity);
@@ -101,9 +94,6 @@ public class WatchlistServiceImpl implements WatchlistService {
         };
     }
 
-    /**
-     * Gets a single profile, fetching related aliases and evidence automatically.
-     */
     @Override
     public WatchlistEntryResponseDto getEntryDetails(Long entryId) {
         log.debug("Fetching details for Watchlist Entry ID: {}", entryId);
@@ -136,9 +126,6 @@ public class WatchlistServiceImpl implements WatchlistService {
         return response;
     }
 
-    /**
-     * Gets dropdown data for the UI filters.
-     */
     @Override
     public List<WatchlistCategoryDto> getActiveCategories() {
         return categoryRepository.findAll().stream()
@@ -147,14 +134,6 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .collect(Collectors.toList());
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // INTERNAL API (Called by Screening Module & Manual Search API)
-    // ══════════════════════════════════════════════════════════════
-
-    /**
-     * TIER 1: Exact ID Match
-     * Called by the Screening module to check for undeniable government ID hits.
-     */
     @Override
     public List<WatchlistEntryResponseDto> findExactIdMatch(String panNumber, String aadhaarNumber, String cin, String din) {
         log.info("Searching DB for exact PAN/Aadhaar/cin/din match...");
@@ -170,10 +149,6 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * TIER 2: Fuzzy Name Match
-     * Used by the Frontend "Manual Search" bar AND the automated Screening module.
-     */
     @Override
     public List<WatchlistEntryResponseDto> searchRawDictionary(String searchName) {
         log.info("Elasticsearch disabled. Falling back to basic DB search for: {}", searchName);

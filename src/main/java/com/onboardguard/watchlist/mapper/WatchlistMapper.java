@@ -14,10 +14,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface WatchlistMapper {
 
-    /**
-     * Maps the core WatchlistEntry entity to the Response DTO.
-     * We explicitly tell MapStruct how to flatten the nested Category entity.
-     */
+
     @Mapping(source = "category.code", target = "categoryCode")
     @Mapping(source = "category.name", target = "categoryName")
     @Mapping(source = "source.name", target = "sourceName")
@@ -28,19 +25,11 @@ public interface WatchlistMapper {
     @Mapping(target = "evidenceDocuments", ignore = true)
     WatchlistEntryResponseDto toResponseDto(WatchlistEntry entry);
 
-    /**
-     * Maps the Alias entity to the nested AliasDto
-     */
+
     WatchlistEntryResponseDto.AliasDto toAliasDto(WatchlistAlias alias);
 
-    /**
-     * Maps the Evidence entity to the nested EvidenceDto
-     */
     WatchlistEntryResponseDto.EvidenceDto toEvidenceDto(WatchlistEvidenceDocument document);
 
-    /**
-     * Maps the Category entity to the CategoryDto
-     */
     @Mapping(target = "categoryCode", expression = "java(com.onboardguard.shared.common.enums.CategoryCode.valueOf(category.getCode().name()))")
     WatchlistCategoryDto toCategoryDto(WatchlistCategory category);
 }

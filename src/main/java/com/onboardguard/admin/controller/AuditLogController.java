@@ -21,12 +21,7 @@ public class AuditLogController {
 
     private final AuditLogService auditLogService;
 
-    /**
-     * Fetches the clean, human-readable timeline for the UI Frontend.
-     * Example Call: GET /api/v1/admin/audit-logs/timeline?entityType=CANDIDATE&entityId=105
-     */
     @GetMapping("/timeline")
-//    @PreAuthorize("hasAnyRole('L1_OFFICER', 'L2_OFFICER', 'ADMIN', 'SUPER_ADMIN', 'ROLE_L1_OFFICER', 'ROLE_L2_OFFICER', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<AuditLogDto>>> getTimeline(
             @RequestParam String entityType,
             @RequestParam Long entityId) {
@@ -36,7 +31,6 @@ public class AuditLogController {
     }
 
     @GetMapping
-//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<AuditLogDto>>> getLogs(
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) String action,
